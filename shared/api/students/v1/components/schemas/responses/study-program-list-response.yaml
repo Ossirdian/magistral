@@ -1,0 +1,12 @@
+StudyProgramListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/StudyProgram
+    meta:
+      $ref: ../../schemas.yaml#/Meta

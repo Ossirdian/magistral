@@ -1,0 +1,112 @@
+Meta:
+  type: object
+  required:
+    - limit
+    - offset
+    - count
+  properties:
+    limit:
+      type: integer
+      example: 50
+    offset:
+      type: integer
+      example: 0
+    count:
+      type: integer
+      example: 1
+
+Payment:
+  type: object
+  required:
+    - id
+    - school_id
+    - student_id
+    - type
+    - amount
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    student_id:
+      type: string
+      format: uuid
+    type:
+      $ref: ./enums/payment-type.yaml#/PaymentType
+    amount:
+      type: number
+      format: double
+    comment:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+PaymentCreateRequest:
+  type: object
+  required:
+    - student_id
+    - type
+    - amount
+  properties:
+    student_id:
+      type: string
+      format: uuid
+    type:
+      $ref: ./enums/payment-type.yaml#/PaymentType
+    amount:
+      type: number
+      format: double
+    comment:
+      type: string
+      nullable: true
+
+PaymentPatchRequest:
+  type: object
+  properties:
+    type:
+      $ref: ./enums/payment-type.yaml#/PaymentType
+    amount:
+      type: number
+      format: double
+    comment:
+      type: string
+      nullable: true
+
+StudentBalance:
+  type: object
+  required:
+    - student_id
+    - contract_total
+    - paid_amount
+    - remaining_amount
+  properties:
+    student_id:
+      type: string
+      format: uuid
+    contract_total:
+      type: number
+      format: double
+    paid_amount:
+      type: number
+      format: double
+    remaining_amount:
+      type: number
+      format: double
+
+StudentContractUpsertRequest:
+  type: object
+  required:
+    - contract_total
+  properties:
+    contract_total:
+      type: number
+      format: double

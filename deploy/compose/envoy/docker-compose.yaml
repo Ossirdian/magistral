@@ -1,0 +1,31 @@
+services:
+  app-envoy:
+    image: envoyproxy/envoy:v1.33-latest
+    container_name: app-envoy
+    command:
+      - envoy
+      - -c
+      - /etc/envoy/envoy.yaml
+      - --log-level
+      - info
+    env_file:
+      - .env
+    ports:
+      - "${EXTERNAL_HTTP_PORT}:${HTTP_PORT}"
+    expose:
+      - "${ADMIN_PORT}"
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml:ro
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "app-envoy"
+    restart: unless-stopped
+    networks:
+      - magistral-microservices
+
+networks:
+  magistral-microservices:
+    name: magistral-microservices
+    external: true

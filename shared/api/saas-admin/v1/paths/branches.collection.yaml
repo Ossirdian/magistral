@@ -1,0 +1,54 @@
+get:
+  tags:
+    - Branches
+  operationId: listBranches
+  summary: List branches
+  parameters:
+    - $ref: ../params/common.yaml#/SchoolFilterId
+    - $ref: ../params/common.yaml#/BranchStatus
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Paginated branches list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/branch-list-response.yaml#/BranchListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Branches
+  operationId: createBranch
+  summary: Create branch
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/BranchCreateRequest
+  responses:
+    '201':
+      description: Created branch.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/branch-response.yaml#/BranchResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

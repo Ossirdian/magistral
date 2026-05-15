@@ -1,0 +1,15 @@
+bin/
+build/
+coverage/
+node_modules/
+.git/
+.github/
+.idea/
+.vscode/
+**/.env
+**/tmp/
+**/*.log
+**/.pytest_cache/
+**/pytest-cache-files-*/
+**/__pycache__/
+**/*.pyc

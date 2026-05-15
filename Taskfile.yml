@@ -1,0 +1,503 @@
+version: '3'
+
+vars:
+  GO_VERSION: '1.26'
+  GOLANGCI_LINT_VERSION: 'v2.11.4'
+  GCI_VERSION: 'v0.14.0'
+  GOFUMPT_VERSION: 'v0.9.2'
+  BUF_VERSION: '1.68.1'
+  PROTOC_GEN_GO_VERSION: 'v1.36.11'
+  PROTOC_GEN_GO_GRPC_VERSION: 'v1.6.1'
+  OGEN_VERSION: 'v1.20.3'
+  MOCKERY_VERSION: 'v2.53.6'
+  YQ_VERSION: 'v4.52.5'
+  GRPCURL_VERSION: 'v1.9.3'
+
+  BIN_DIR: '{{.ROOT_DIR}}/bin'
+  GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
+  GCI: '{{.BIN_DIR}}/gci'
+  GOFUMPT: '{{.BIN_DIR}}/gofumpt'
+  BUF: '{{.BIN_DIR}}/buf'
+  OGEN: '{{.BIN_DIR}}/ogen'
+  MOCKERY: '{{.BIN_DIR}}/mockery'
+  YQ: '{{.BIN_DIR}}/yq'
+  PROTOC_GEN_GO: '{{.BIN_DIR}}/protoc-gen-go'
+  PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
+  GRPCURL: '{{.BIN_DIR}}/grpcurl'
+
+  OPEN_API_RESOURCES_V1_BASE: '{{.ROOT_DIR}}/shared/api/resources/v1/resources.openapi.yaml'
+  OPEN_API_SAAS_ADMIN_V1_BASE: '{{.ROOT_DIR}}/shared/api/saas-admin/v1/saas-admin.openapi.yaml'
+  OPEN_API_LESSONS_V1_BASE: '{{.ROOT_DIR}}/shared/api/lessons/v1/lessons.openapi.yaml'
+  OPEN_API_STUDENTS_V1_BASE: '{{.ROOT_DIR}}/shared/api/students/v1/students.openapi.yaml'
+  OPEN_API_PAYMENTS_V1_BASE: '{{.ROOT_DIR}}/shared/api/payments/v1/payments.openapi.yaml'
+  OPEN_API_DOCUMENTS_V1_BASE: '{{.ROOT_DIR}}/shared/api/documents/v1/documents.openapi.yaml'
+  OPEN_API_REPORTING_V1_BASE: '{{.ROOT_DIR}}/shared/api/reporting/v1/reporting.openapi.yaml'
+  OPEN_API_ROOT: '{{.ROOT_DIR}}/shared/api'
+  OPEN_API_OGEN_CONFIG: '{{.ROOT_DIR}}/shared/api/ogen.yaml'
+  MOCKERY_CONFIG: '{{.ROOT_DIR}}/resources/.mockery.yaml'
+  BAKE_FILE: 'deploy/docker/docker-bake.hcl'
+
+  MODULES: 'iam lesson platform resources saas student payment document reporting shared'
+  INTEGRATION_MODULES: 'resources saas iam lesson student payment document reporting'
+
+
+tasks:
+  install-formatters:
+    desc: 'Install gofumpt and gci into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.GOFUMPT}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; Write-Host 'Installing gofumpt {{.GOFUMPT_VERSION}}...'; $env:GOBIN='{{.BIN_DIR}}'; go install mvdan.cc/gofumpt@{{.GOFUMPT_VERSION}} }"
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.GCI}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; Write-Host 'Installing gci {{.GCI_VERSION}}...'; $env:GOBIN='{{.BIN_DIR}}'; go install github.com/daixiang0/gci@{{.GCI_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "(Test-Path '{{.GOFUMPT}}.exe') -and (Test-Path '{{.GCI}}.exe')"
+
+  format:
+    desc: 'Format all Go code with gofumpt and gci except mocks'
+    deps: [install-formatters]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-format.ps1" -Modules "{{.MODULES}}" -Gofumpt "{{.GOFUMPT}}.exe" -Gci "{{.GCI}}.exe" -ImportPrefix "github.com/olezhek28/microservices-course-olezhek-solution"
+
+  install-golangci-lint:
+    desc: 'Install golangci-lint into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.GOLANGCI_LINT}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; Write-Host 'Installing golangci-lint {{.GOLANGCI_LINT_VERSION}}...'; $env:GOBIN='{{.BIN_DIR}}'; go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Test-Path '{{.GOLANGCI_LINT}}.exe'"
+
+  lint:
+    desc: 'Run golangci-lint for all modules'
+    deps: [install-golangci-lint]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-lint.ps1" -Modules "{{.MODULES}}" -GolangciLint "{{.GOLANGCI_LINT}}.exe"
+
+  install-buf:
+    desc: 'Install buf into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.BUF}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; $env:GOBIN='{{.BIN_DIR}}'; go install github.com/bufbuild/buf/cmd/buf@v{{.BUF_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Test-Path '{{.BUF}}.exe'"
+
+  proto:install-plugins:
+    desc: 'Install protoc plugins into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.PROTOC_GEN_GO}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; $env:GOBIN='{{.BIN_DIR}}'; go install google.golang.org/protobuf/cmd/protoc-gen-go@{{.PROTOC_GEN_GO_VERSION}} }"
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.PROTOC_GEN_GO_GRPC}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; $env:GOBIN='{{.BIN_DIR}}'; go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "(Test-Path '{{.PROTOC_GEN_GO}}.exe') -and (Test-Path '{{.PROTOC_GEN_GO_GRPC}}.exe')"
+
+  proto:gen:
+    desc: 'Generate Go code from proto files'
+    deps: [install-buf, proto:install-plugins, proto:lint]
+    dir: shared/proto
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.BUF}}.exe' generate"
+
+  proto:lint:
+    desc: 'Lint proto files'
+    deps: [install-buf, proto:install-plugins]
+    dir: shared/proto
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.BUF}}.exe' lint"
+
+  ogen:install:
+    desc: 'Install ogen into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "$env:GOBIN='{{.BIN_DIR}}'; New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; go install github.com/ogen-go/ogen/cmd/ogen@{{.OGEN_VERSION}}"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Test-Path '{{.OGEN}}.exe'"
+
+  ogen:gen:
+    desc: 'Generate Go code from resources OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/resources/v1' --package 'resourcesv1' '{{.OPEN_API_RESOURCES_V1_BASE}}'"
+
+  ogen:gen:saas-admin:
+    desc: 'Generate Go code from saas-admin OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/saasadmin/v1' --package 'saasadminv1' '{{.OPEN_API_SAAS_ADMIN_V1_BASE}}'"
+
+  ogen:gen:lessons:
+    desc: 'Generate Go code from lessons OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/lessons/v1' --package 'lessonsv1' '{{.OPEN_API_LESSONS_V1_BASE}}'"
+
+  ogen:gen:students:
+    desc: 'Generate Go code from students OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/students/v1' --package 'studentsv1' '{{.OPEN_API_STUDENTS_V1_BASE}}'"
+
+  ogen:gen:payments:
+    desc: 'Generate Go code from payments OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/payments/v1' --package 'paymentsv1' '{{.OPEN_API_PAYMENTS_V1_BASE}}'"
+
+  ogen:gen:documents:
+    desc: 'Generate Go code from documents OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/documents/v1' --package 'documentsv1' '{{.OPEN_API_DOCUMENTS_V1_BASE}}'"
+
+  ogen:gen:reporting:
+    desc: 'Generate Go code from reporting OpenAPI'
+    deps: [ogen:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.OGEN}}.exe' --config '{{.OPEN_API_OGEN_CONFIG}}' --target 'shared/pkg/reporting/v1' --package 'reportingv1' '{{.OPEN_API_REPORTING_V1_BASE}}'"
+
+  ogen:gen:all:
+    desc: 'Generate Go code from all OpenAPI contracts'
+    cmds:
+      - task: ogen:gen
+      - task: ogen:gen:saas-admin
+      - task: ogen:gen:lessons
+      - task: ogen:gen:students
+      - task: ogen:gen:payments
+      - task: ogen:gen:documents
+      - task: ogen:gen:reporting
+
+  mockery:install:
+    desc: 'Install mockery into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.MOCKERY}}.exe')) { $env:GOBIN='{{.BIN_DIR}}'; New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; go install github.com/vektra/mockery/v2@{{.MOCKERY_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Test-Path '{{.MOCKERY}}.exe'"
+
+  mockery:gen:
+    desc: 'Generate mocks for resources'
+    deps: [mockery:install]
+    dir: resources
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "& '{{.MOCKERY}}.exe' --config '{{.MOCKERY_CONFIG}}'"
+
+  gen:
+    desc: 'Generate proto and OpenAPI code'
+    cmds:
+      - task: proto:gen
+      - task: ogen:gen:all
+
+  test:
+    desc: 'Run unit tests for all modules'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-test.ps1" -Modules "{{.MODULES}}"
+
+  test-integration:
+    desc: 'Run integration tests for service modules'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-test-integration.ps1" -Modules "{{.INTEGRATION_MODULES}}"
+
+  planning:test:
+    desc: 'Run Planning GA demo with mocked students, cars, instructors, and 30-day schedule'
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python -m planning.demo_schedule
+
+  env:generate:
+    desc: 'Generate compose env files from templates'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "deploy/env/generate-env.ps1"
+
+  docker:up:core:
+    desc: 'Start shared core compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/core/docker-compose.yaml --env-file deploy/compose/core/.env up -d --wait
+
+  docker:down:core:
+    desc: 'Stop shared core compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/core/docker-compose.yaml --env-file deploy/compose/core/.env down
+
+  docker:reset:core:
+    desc: 'Stop all compose stacks and remove postgres-core data volume'
+    deps: [env:generate]
+    cmds:
+      - task: docker:down:all
+      - docker compose -f deploy/compose/core/docker-compose.yaml --env-file deploy/compose/core/.env down -v
+
+  docker:build:resources:
+    desc: 'Build resources image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" resources
+
+  docker:build:saas:
+    desc: 'Build saas image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" saas
+
+  docker:build:iam:
+    desc: 'Build iam image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" iam
+
+  docker:build:frontend:
+    desc: 'Build frontend image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" frontend
+
+  docker:build:planning:
+    desc: 'Build planning image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" planning
+
+  docker:build:payment:
+    desc: 'Build payment image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" payment
+
+  docker:build:document:
+    desc: 'Build document image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" document
+
+  docker:build:reporting:
+    desc: 'Build reporting image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" reporting
+
+  docker:build:student:
+    desc: 'Build student image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" student
+
+  docker:build:all:
+    desc: 'Build all images via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" all
+
+  docker:up:resources:
+    desc: 'Start resources compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/resources/docker-compose.yaml --env-file deploy/compose/resources/.env up -d
+
+  docker:up:saas:
+    desc: 'Start saas compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/saas/docker-compose.yaml --env-file deploy/compose/saas/.env up -d
+
+  docker:up:iam:
+    desc: 'Start iam compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/iam/docker-compose.yaml --env-file deploy/compose/iam/.env up -d
+
+  docker:up:frontend:
+    desc: 'Start frontend compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - task: docker:up:iam
+      - task: docker:up:saas
+      - task: docker:up:resources
+      - task: docker:up:lesson
+      - task: docker:up:student
+      - task: docker:up:payment
+      - task: docker:up:document
+      - task: docker:up:reporting
+      - task: docker:up:planning
+      - docker compose -f deploy/compose/frontend/docker-compose.yaml --env-file deploy/compose/frontend/.env up -d --build --force-recreate
+      - task: docker:up:envoy
+
+  docker:up:envoy:
+    desc: 'Start envoy ingress compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/envoy/docker-compose.yaml --env-file deploy/compose/envoy/.env up -d
+
+  docker:up:payment:
+    desc: 'Start payment compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/payment/docker-compose.yaml --env-file deploy/compose/payment/.env up -d
+
+  docker:up:document:
+    desc: 'Start document compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/document/docker-compose.yaml --env-file deploy/compose/document/.env up -d
+
+  docker:up:reporting:
+    desc: 'Start reporting compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/reporting/docker-compose.yaml --env-file deploy/compose/reporting/.env up -d
+
+  docker:up:planning:
+    desc: 'Start planning compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/planning/docker-compose.yaml --env-file deploy/compose/planning/.env up -d
+
+  docker:up:student:
+    desc: 'Start student compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/student/docker-compose.yaml --env-file deploy/compose/student/.env up -d
+
+  docker:up:all:
+    desc: 'Start all compose profiles'
+    cmds:
+      - task: docker:up:core
+      - task: docker:up:iam
+      - task: docker:up:saas
+      - task: docker:up:resources
+      - task: docker:up:lesson
+      - task: docker:up:student
+      - task: docker:up:payment
+      - task: docker:up:document
+      - task: docker:up:reporting
+      - task: docker:up:planning
+      - task: docker:up:frontend
+
+  docker:down:resources:
+    desc: 'Stop resources compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/resources/docker-compose.yaml --env-file deploy/compose/resources/.env down
+
+  docker:down:saas:
+    desc: 'Stop saas compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/saas/docker-compose.yaml --env-file deploy/compose/saas/.env down
+
+  docker:down:iam:
+    desc: 'Stop iam compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/iam/docker-compose.yaml --env-file deploy/compose/iam/.env down
+
+  docker:down:frontend:
+    desc: 'Stop frontend compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:down:envoy
+      - docker compose -f deploy/compose/frontend/docker-compose.yaml --env-file deploy/compose/frontend/.env down
+
+  docker:down:envoy:
+    desc: 'Stop envoy ingress compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/envoy/docker-compose.yaml --env-file deploy/compose/envoy/.env down
+
+  docker:down:planning:
+    desc: 'Stop planning compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/planning/docker-compose.yaml --env-file deploy/compose/planning/.env down
+
+  docker:down:payment:
+    desc: 'Stop payment compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/payment/docker-compose.yaml --env-file deploy/compose/payment/.env down
+
+  docker:down:document:
+    desc: 'Stop document compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/document/docker-compose.yaml --env-file deploy/compose/document/.env down
+
+  docker:down:reporting:
+    desc: 'Stop reporting compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/reporting/docker-compose.yaml --env-file deploy/compose/reporting/.env down
+
+  docker:down:student:
+    desc: 'Stop student compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/student/docker-compose.yaml --env-file deploy/compose/student/.env down
+
+  docker:down:all:
+    desc: 'Stop all compose profiles'
+    cmds:
+      - task: docker:down:frontend
+      - task: docker:down:planning
+      - task: docker:down:document
+      - task: docker:down:reporting
+      - task: docker:down:payment
+      - task: docker:down:lesson
+      - task: docker:down:student
+      - task: docker:down:resources
+      - task: docker:down:saas
+      - task: docker:down:iam
+      - task: docker:down:core
+
+  deps:update:
+    desc: 'Run go mod tidy in all modules'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "$mods='{{.MODULES}}'.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries); foreach ($mod in $mods) { if (Test-Path $mod) { Push-Location $mod; try { go mod tidy -compat={{.GO_VERSION}} } finally { Pop-Location } } }"
+
+  yq:install:
+    desc: 'Install yq into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.YQ}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; $env:GOBIN='{{.BIN_DIR}}'; go install github.com/mikefarah/yq/v4@{{.YQ_VERSION}} }"
+    status:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "Test-Path '{{.YQ}}.exe'"
+
+  grpcurl:install:
+    desc: 'Install grpcurl into ./bin'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-Path '{{.GRPCURL}}.exe')) { New-Item -ItemType Directory -Force '{{.BIN_DIR}}' | Out-Null; Set-Item -Path Env:GOBIN -Value '{{.BIN_DIR}}'; go install github.com/fullstorydev/grpcurl/cmd/grpcurl@{{.GRPCURL_VERSION}} }"
+
+  iam:test:list-methods:
+    desc: 'List IAM gRPC methods via grpcurl'
+    deps: [grpcurl:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-iam-grpcurl.ps1" -Grpcurl "{{.GRPCURL}}.exe" -Method "list"
+
+  iam:test:create-user:
+    desc: 'Create test IAM user via grpcurl'
+    deps: [grpcurl:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-iam-grpcurl.ps1" -Grpcurl "{{.GRPCURL}}.exe" -Method "iam.v1.IAMService/CreateUser" -Data "{\"email\":\"admin@example.com\",\"password\":\"Passw0rd!\",\"role\":\"USER_ROLE_ADMIN\",\"status\":\"USER_STATUS_ACTIVE\"}"
+
+  iam:test:login:
+    desc: 'Login test IAM user via grpcurl'
+    deps: [grpcurl:install]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-iam-grpcurl.ps1" -Grpcurl "{{.GRPCURL}}.exe" -Method "iam.v1.IAMService/Login" -Data "{\"email\":\"admin@example.com\",\"password\":\"Passw0rd!\"}"
+  docker:build:lesson:
+    desc: 'Build lesson image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" lesson
+
+  docker:up:lesson:
+    desc: 'Start lesson compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - docker compose -f deploy/compose/lesson/docker-compose.yaml --env-file deploy/compose/lesson/.env up -d
+
+  docker:down:lesson:
+    desc: 'Stop lesson compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/lesson/docker-compose.yaml --env-file deploy/compose/lesson/.env down

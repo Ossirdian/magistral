@@ -1,0 +1,12 @@
+LessonListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/Lesson
+    meta:
+      $ref: ../../schemas.yaml#/Meta

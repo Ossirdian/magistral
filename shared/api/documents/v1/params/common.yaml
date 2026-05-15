@@ -1,0 +1,62 @@
+DocumentId:
+  name: documentId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+TemplateId:
+  name: templateId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+StudentFilterId:
+  name: student_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+DocumentType:
+  name: type
+  in: query
+  required: false
+  schema:
+    type: string
+
+DocumentStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/document-status.yaml#/DocumentStatus
+
+TemplateType:
+  name: type
+  in: query
+  required: false
+  schema:
+    type: string
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 50
+
+Offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0

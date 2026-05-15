@@ -1,0 +1,11 @@
+ErrorBody:
+  type: object
+  required:
+    - error
+    - request_id
+  properties:
+    error:
+      $ref: ./error-object.yaml#/ErrorObject
+    request_id:
+      type: string
+      example: req-123

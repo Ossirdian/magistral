@@ -1,0 +1,6 @@
+Conflict:
+  description: Operation conflicts with the current resource state.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

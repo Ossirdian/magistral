@@ -1,0 +1,50 @@
+patch:
+  tags:
+    - Payments
+  operationId: patchPayment
+  summary: Patch payment
+  parameters:
+    - $ref: ../params/common.yaml#/PaymentId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/PaymentPatchRequest
+  responses:
+    '200':
+      description: Payment updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/payment-response.yaml#/PaymentResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+delete:
+  tags:
+    - Payments
+  operationId: deletePayment
+  summary: Delete payment
+  parameters:
+    - $ref: ../params/common.yaml#/PaymentId
+  responses:
+    '204':
+      description: Payment deleted
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

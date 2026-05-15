@@ -1,0 +1,23 @@
+with-expecter: true
+issue-845-fix: true
+resolve-type-alias: false
+disable-version-string: true
+packages:
+  github.com/ossirdian/magistral/resources/internal/repository:
+    config:
+      dir: internal/repository/mocks
+      outpkg: mocks
+      filename: "{{ .InterfaceName | snakecase }}.go"
+      mockname: "{{ .InterfaceName }}"
+    interfaces:
+      CarRepository: {}
+      InstructorRepository: {}
+  github.com/ossirdian/magistral/resources/internal/service:
+    config:
+      dir: internal/service/mocks
+      outpkg: mocks
+      filename: "{{ .InterfaceName | snakecase }}.go"
+      mockname: "{{ .InterfaceName }}"
+    interfaces:
+      CarService: {}
+      InstructorService: {}

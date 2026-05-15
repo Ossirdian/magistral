@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: Document Service API
+  version: 1.0.0
+  description: API for managing student documents and document templates within the current school tenant.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/documents/v1
+  package: documentsv1
+tags:
+  - name: Documents
+  - name: DocumentTemplates
+paths:
+  /documents:
+    $ref: ./paths/documents.collection.yaml
+  /documents/upload:
+    $ref: ./paths/documents.upload.yaml
+  /documents/generate:
+    $ref: ./paths/documents.generate.yaml
+  /documents/{documentId}:
+    $ref: ./paths/documents.item.yaml
+  /documents/{documentId}/download:
+    $ref: ./paths/documents.download.yaml
+  /document-templates:
+    $ref: ./paths/templates.collection.yaml
+  /document-templates/{templateId}:
+    $ref: ./paths/templates.item.yaml
+components:
+  parameters:
+    DocumentId: { $ref: ./params/common.yaml#/DocumentId }
+    TemplateId: { $ref: ./params/common.yaml#/TemplateId }
+    StudentFilterId: { $ref: ./params/common.yaml#/StudentFilterId }
+    DocumentType: { $ref: ./params/common.yaml#/DocumentType }
+    DocumentStatus: { $ref: ./params/common.yaml#/DocumentStatus }
+    TemplateType: { $ref: ./params/common.yaml#/TemplateType }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    DocumentStatus: { $ref: ./components/enums/document-status.yaml#/DocumentStatus }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    Document: { $ref: ./components/schemas.yaml#/Document }
+    DocumentUploadRequest: { $ref: ./components/schemas.yaml#/DocumentUploadRequest }
+    DocumentGenerateRequest: { $ref: ./components/schemas.yaml#/DocumentGenerateRequest }
+    DocumentDownload: { $ref: ./components/schemas.yaml#/DocumentDownload }
+    DocumentTemplate: { $ref: ./components/schemas.yaml#/DocumentTemplate }
+    DocumentTemplateCreateRequest: { $ref: ./components/schemas.yaml#/DocumentTemplateCreateRequest }
+    DocumentTemplatePatchRequest: { $ref: ./components/schemas.yaml#/DocumentTemplatePatchRequest }
+    DocumentResponse: { $ref: ./components/schemas/responses/document-response.yaml#/DocumentResponse }
+    DocumentListResponse: { $ref: ./components/schemas/responses/document-list-response.yaml#/DocumentListResponse }
+    DocumentDownloadResponse: { $ref: ./components/schemas/responses/document-download-response.yaml#/DocumentDownloadResponse }
+    DocumentTemplateResponse: { $ref: ./components/schemas/responses/document-template-response.yaml#/DocumentTemplateResponse }
+    DocumentTemplateListResponse: { $ref: ./components/schemas/responses/document-template-list-response.yaml#/DocumentTemplateListResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+    DefaultError: { $ref: ./components/responses/default-error.yaml#/DefaultError }

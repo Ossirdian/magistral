@@ -1,0 +1,54 @@
+get:
+  tags:
+    - Schools
+  operationId: listSchools
+  summary: List schools
+  parameters:
+    - $ref: ../params/common.yaml#/SchoolStatus
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+    - $ref: ../params/common.yaml#/Search
+  responses:
+    '200':
+      description: Paginated schools list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/school-list-response.yaml#/SchoolListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Schools
+  operationId: createSchool
+  summary: Create school
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/SchoolCreateRequest
+  responses:
+    '201':
+      description: Created school.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/school-response.yaml#/SchoolResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

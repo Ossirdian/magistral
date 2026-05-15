@@ -1,0 +1,12 @@
+ErrorObject:
+  type: object
+  required:
+    - code
+    - message
+  properties:
+    code:
+      type: string
+      example: bad_request
+    message:
+      type: string
+      example: school not found

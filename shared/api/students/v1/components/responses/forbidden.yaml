@@ -1,0 +1,6 @@
+Forbidden:
+  description: Role is not allowed to perform the operation.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

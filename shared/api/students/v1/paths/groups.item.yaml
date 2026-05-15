@@ -1,0 +1,76 @@
+get:
+  tags:
+    - Groups
+  operationId: getGroup
+  summary: Get group by id
+  parameters:
+    - $ref: ../params/common.yaml#/GroupId
+  responses:
+    '200':
+      description: Group details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/group-response.yaml#/GroupResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+patch:
+  tags:
+    - Groups
+  operationId: patchGroup
+  summary: Update group partially
+  parameters:
+    - $ref: ../params/common.yaml#/GroupId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/GroupPatchRequest
+  responses:
+    '200':
+      description: Updated group.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/group-response.yaml#/GroupResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags:
+    - Groups
+  operationId: deleteGroup
+  summary: Delete group
+  parameters:
+    - $ref: ../params/common.yaml#/GroupId
+  responses:
+    '204':
+      description: Group deleted.
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

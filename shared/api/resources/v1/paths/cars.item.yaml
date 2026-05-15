@@ -1,0 +1,77 @@
+get:
+  tags:
+    - Cars
+  operationId: getCar
+  summary: Get car by id
+  parameters:
+    - $ref: ../params/common.yaml#/CarId
+  responses:
+    '200':
+      description: Car details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/car-response.yaml#/CarResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+patch:
+  tags:
+    - Cars
+  operationId: patchCar
+  summary: Update car partially
+  parameters:
+    - $ref: ../params/common.yaml#/CarId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/CarPatchRequest
+  responses:
+    '200':
+      description: Updated car.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/car-response.yaml#/CarResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags:
+    - Cars
+  operationId: deleteCar
+  summary: Delete car
+  parameters:
+    - $ref: ../params/common.yaml#/CarId
+  responses:
+    '204':
+      description: Car deleted.
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+

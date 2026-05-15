@@ -1,0 +1,6 @@
+Unauthorized:
+  description: Unauthorized
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

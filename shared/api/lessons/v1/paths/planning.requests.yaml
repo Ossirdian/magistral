@@ -1,0 +1,32 @@
+post:
+  tags:
+    - Internal
+  operationId: createPlanningRequest
+  summary: Queue planning request
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/PlanningRequestCreateRequest
+  responses:
+    '202':
+      description: Planning request accepted for asynchronous processing.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas.yaml#/PlanningRequestResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '503':
+      description: Planning queue is unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/error-body.yaml#/ErrorBody
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

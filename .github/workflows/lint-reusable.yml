@@ -1,0 +1,27 @@
+name: Run Lint
+
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        required: true
+        type: string
+      golangci-lint-version:
+        required: true
+        type: string
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+      - name: Install Task
+        uses: arduino/setup-task@v2
+      - name: Run lint
+        run: task lint

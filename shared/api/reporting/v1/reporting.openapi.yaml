@@ -1,0 +1,373 @@
+openapi: 3.0.3
+info:
+  title: Reporting Service API
+  version: 1.0.0
+  description: Read-only reporting and analytics API for school-scoped CRM aggregates.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/reporting/v1
+  package: reportingv1
+tags:
+  - name: Reports
+paths:
+  /reports/dashboard:
+    get:
+      operationId: getDashboardReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          description: Dashboard metrics.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardReportResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+  /reports/students:
+    get:
+      operationId: getStudentsReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+      responses:
+        '200':
+          description: Student aggregates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentsReportResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+  /reports/lessons:
+    get:
+      operationId: getLessonsReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          description: Lesson aggregates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LessonsReportResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+  /reports/instructors/workload:
+    get:
+      operationId: getInstructorWorkloadReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          description: Instructor workload report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstructorWorkloadResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+  /reports/cars/utilization:
+    get:
+      operationId: getCarsUtilizationReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          description: Cars utilization report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CarsUtilizationResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+  /reports/finance:
+    get:
+      operationId: getFinanceReport
+      tags: [Reports]
+      parameters:
+        - $ref: '#/components/parameters/BranchId'
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/Month'
+        - $ref: '#/components/parameters/DateFrom'
+        - $ref: '#/components/parameters/DateTo'
+      responses:
+        '200':
+          description: Financial aggregates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialReportResponse'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        default: { $ref: '#/components/responses/DefaultError' }
+components:
+  parameters:
+    BranchId:
+      name: branch_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    GroupId:
+      name: group_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    Month:
+      name: month
+      in: query
+      required: false
+      description: Month filter in YYYY-MM format. Ignored when date_from or date_to is provided.
+      schema:
+        type: string
+        pattern: '^[0-9]{4}-[0-9]{2}$'
+    DateFrom:
+      name: date_from
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+    DateTo:
+      name: date_to
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date-time
+  schemas:
+    ErrorObject:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ErrorBody:
+      type: object
+      required: [error, request_id]
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorObject'
+        request_id:
+          type: string
+    StatusCount:
+      type: object
+      required: [status, count]
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+          format: int64
+    PaymentTypeAmount:
+      type: object
+      required: [type, amount]
+      properties:
+        type:
+          type: string
+        amount:
+          type: number
+          format: double
+    DashboardReport:
+      type: object
+      required:
+        - active_students
+        - lessons_total
+        - instructors_total
+        - cars_total
+        - payments_total
+        - contracts_remaining_total
+      properties:
+        active_students:
+          type: integer
+          format: int64
+        lessons_total:
+          type: integer
+          format: int64
+        instructors_total:
+          type: integer
+          format: int64
+        cars_total:
+          type: integer
+          format: int64
+        payments_total:
+          type: number
+          format: double
+        contracts_remaining_total:
+          type: number
+          format: double
+    StudentsReport:
+      type: object
+      required: [total, active, new, statuses]
+      properties:
+        total:
+          type: integer
+          format: int64
+        active:
+          type: integer
+          format: int64
+        new:
+          type: integer
+          format: int64
+        statuses:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatusCount'
+    LessonsReport:
+      type: object
+      required: [total, scheduled, completed, cancelled, missed]
+      properties:
+        total:
+          type: integer
+          format: int64
+        scheduled:
+          type: integer
+          format: int64
+        completed:
+          type: integer
+          format: int64
+        cancelled:
+          type: integer
+          format: int64
+        missed:
+          type: integer
+          format: int64
+    InstructorWorkloadItem:
+      type: object
+      required: [instructor_id, full_name, lessons_total, total_minutes]
+      properties:
+        instructor_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        lessons_total:
+          type: integer
+          format: int64
+        total_minutes:
+          type: integer
+          format: int64
+    CarUtilizationItem:
+      type: object
+      required: [car_id, plate_number, display_name, lessons_total, total_minutes]
+      properties:
+        car_id:
+          type: string
+          format: uuid
+        plate_number:
+          type: string
+        display_name:
+          type: string
+        lessons_total:
+          type: integer
+          format: int64
+        total_minutes:
+          type: integer
+          format: int64
+    FinancialReport:
+      type: object
+      required: [payments_total, remaining_total, payment_types]
+      properties:
+        payments_total:
+          type: number
+          format: double
+        remaining_total:
+          type: number
+          format: double
+        payment_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentTypeAmount'
+    DashboardReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/DashboardReport'
+    StudentsReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/StudentsReport'
+    LessonsReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/LessonsReport'
+    InstructorWorkloadResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstructorWorkloadItem'
+    CarsUtilizationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CarUtilizationItem'
+    FinancialReportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/FinancialReport'
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+    Unauthorized:
+      description: Missing or invalid auth context.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+    DefaultError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'

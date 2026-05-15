@@ -1,0 +1,7 @@
+StudyProgramResponse:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      $ref: ../../schemas.yaml#/StudyProgram

@@ -1,0 +1,14 @@
+go 1.26.2
+
+use (
+	./document
+	./iam
+	./lesson
+	./payment
+	./platform
+	./reporting
+	./resources
+	./saas
+	./student
+	./shared
+)

@@ -1,0 +1,9 @@
+AvailabilityWindowListResponse:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/AvailabilityWindow

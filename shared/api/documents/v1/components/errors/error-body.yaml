@@ -1,0 +1,6 @@
+ErrorBody:
+  type: object
+  required: [error]
+  properties:
+    error:
+      $ref: ./error-object.yaml#/ErrorObject

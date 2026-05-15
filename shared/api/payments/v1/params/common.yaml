@@ -1,0 +1,49 @@
+PaymentId:
+  name: paymentId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+StudentId:
+  name: studentId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+StudentFilterId:
+  name: student_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+PaymentType:
+  name: type
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/payment-type.yaml#/PaymentType
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 50
+
+Offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0

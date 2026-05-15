@@ -1,0 +1,33 @@
+post:
+  tags:
+    - CarAssignment
+  operationId: assignCar
+  summary: Assign or reassign car to instructor
+  parameters:
+    - $ref: ../params/common.yaml#/CarId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/CarAssignmentRequest
+  responses:
+    '200':
+      description: Assignment result.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/car-assignment-response.yaml#/CarAssignmentResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+

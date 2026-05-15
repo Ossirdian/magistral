@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package student.v1;
+
+option go_package = "github.com/ossirdian/magistral/shared/pkg/student/v1;studentv1";
+
+import "google/protobuf/timestamp.proto";
+
+service StudentService {
+  rpc GetStudent(GetStudentRequest) returns (Student);
+}
+
+enum StudentStatus {
+  STUDENT_STATUS_UNSPECIFIED = 0;
+  STUDENT_STATUS_NEW = 1;
+  STUDENT_STATUS_ACTIVE = 2;
+  STUDENT_STATUS_PAUSED = 3;
+  STUDENT_STATUS_GRADUATED = 4;
+  STUDENT_STATUS_ARCHIVED = 5;
+}
+
+message Student {
+  string id = 1;
+  string school_id = 2;
+  string branch_id = 3;
+  string full_name = 4;
+  string phone = 5;
+  StudentStatus status = 6;
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  string group_id = 9;
+}
+
+message GetStudentRequest {
+  string school_id = 1;
+  string student_id = 2;
+}

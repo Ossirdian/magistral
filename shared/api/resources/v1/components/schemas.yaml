@@ -1,0 +1,302 @@
+Meta:
+  type: object
+  required:
+    - limit
+    - offset
+    - count
+  properties:
+    limit:
+      type: integer
+      example: 50
+    offset:
+      type: integer
+      example: 0
+    count:
+      type: integer
+      example: 1
+
+Instructor:
+  type: object
+  required:
+    - id
+    - school_id
+    - branch_id
+    - full_name
+    - status
+    - availability_status
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    branch_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      format: email
+      nullable: true
+    status:
+      $ref: ./enums/instructor-status.yaml#/InstructorStatus
+    availability_status:
+      $ref: ./enums/availability-status.yaml#/AvailabilityStatus
+    current_car_id:
+      type: string
+      format: uuid
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+InstructorCreateRequest:
+  type: object
+  required:
+    - branch_id
+    - full_name
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      format: email
+      nullable: true
+    status:
+      $ref: ./enums/instructor-status.yaml#/InstructorStatus
+
+InstructorPatchRequest:
+  type: object
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      format: email
+      nullable: true
+    status:
+      $ref: ./enums/instructor-status.yaml#/InstructorStatus
+
+Car:
+  type: object
+  required:
+    - id
+    - school_id
+    - branch_id
+    - plate_number
+    - transmission
+    - status
+    - availability_status
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    branch_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+      nullable: true
+    plate_number:
+      type: string
+    brand:
+      type: string
+      nullable: true
+    model:
+      type: string
+      nullable: true
+    color:
+      type: string
+      nullable: true
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    status:
+      $ref: ./enums/car-status.yaml#/CarStatus
+    availability_status:
+      $ref: ./enums/availability-status.yaml#/AvailabilityStatus
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+CarCreateRequest:
+  type: object
+  required:
+    - branch_id
+    - plate_number
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+      nullable: true
+    plate_number:
+      type: string
+    brand:
+      type: string
+      nullable: true
+    model:
+      type: string
+      nullable: true
+    color:
+      type: string
+      nullable: true
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    status:
+      $ref: ./enums/car-status.yaml#/CarStatus
+
+CarPatchRequest:
+  type: object
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+      nullable: true
+    plate_number:
+      type: string
+    brand:
+      type: string
+      nullable: true
+    model:
+      type: string
+      nullable: true
+    color:
+      type: string
+      nullable: true
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    status:
+      $ref: ./enums/car-status.yaml#/CarStatus
+
+AvailabilityWindow:
+  type: object
+  required:
+    - id
+    - resource_type
+    - resource_id
+    - type
+    - start_at
+    - end_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    resource_type:
+      $ref: ./enums/resource-type.yaml#/ResourceType
+    resource_id:
+      type: string
+      format: uuid
+    type:
+      $ref: ./enums/availability-window-type.yaml#/AvailabilityWindowType
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    comment:
+      type: string
+      nullable: true
+
+AvailabilityWindowInput:
+  type: object
+  required:
+    - type
+    - start_at
+    - end_at
+  properties:
+    type:
+      $ref: ./enums/availability-window-type.yaml#/AvailabilityWindowType
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    comment:
+      type: string
+      nullable: true
+
+AvailabilityReplaceRequest:
+  type: object
+  required:
+    - windows
+  properties:
+    windows:
+      type: array
+      items:
+        $ref: '#/AvailabilityWindowInput'
+
+CarAssignmentRequest:
+  type: object
+  required:
+    - instructor_id
+  properties:
+    instructor_id:
+      type: string
+      format: uuid
+    effective_from:
+      type: string
+      format: date-time
+      nullable: true
+    comment:
+      type: string
+      nullable: true
+
+CarAssignmentResult:
+  type: object
+  required:
+    - car_id
+    - instructor_id
+    - assigned_at
+  properties:
+    car_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+    previous_instructor_id:
+      type: string
+      format: uuid
+      nullable: true
+    assigned_at:
+      type: string
+      format: date-time
+

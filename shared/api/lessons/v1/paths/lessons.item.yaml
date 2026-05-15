@@ -1,0 +1,76 @@
+get:
+  tags:
+    - Lessons
+  operationId: getLesson
+  summary: Get lesson by id
+  parameters:
+    - $ref: ../params/common.yaml#/LessonId
+  responses:
+    '200':
+      description: Lesson details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/lesson-response.yaml#/LessonResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+patch:
+  tags:
+    - Lessons
+  operationId: patchLesson
+  summary: Update lesson partially
+  parameters:
+    - $ref: ../params/common.yaml#/LessonId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/LessonPatchRequest
+  responses:
+    '200':
+      description: Updated lesson.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/lesson-response.yaml#/LessonResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags:
+    - Lessons
+  operationId: deleteLesson
+  summary: Delete lesson
+  parameters:
+    - $ref: ../params/common.yaml#/LessonId
+  responses:
+    '204':
+      description: Lesson deleted.
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

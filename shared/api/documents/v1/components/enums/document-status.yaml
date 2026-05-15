@@ -1,0 +1,7 @@
+DocumentStatus:
+  type: string
+  enum:
+    - draft
+    - generated
+    - uploaded
+    - archived

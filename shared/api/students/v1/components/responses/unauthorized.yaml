@@ -1,0 +1,6 @@
+Unauthorized:
+  description: Missing or invalid auth context.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

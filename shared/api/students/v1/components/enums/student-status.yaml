@@ -1,0 +1,8 @@
+StudentStatus:
+  type: string
+  enum:
+    - new
+    - active
+    - paused
+    - graduated
+    - archived

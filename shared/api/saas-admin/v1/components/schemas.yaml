@@ -1,0 +1,129 @@
+Meta:
+  type: object
+  required:
+    - limit
+    - offset
+    - count
+  properties:
+    limit:
+      type: integer
+      example: 50
+    offset:
+      type: integer
+      example: 0
+    count:
+      type: integer
+      example: 10
+
+School:
+  type: object
+  required:
+    - id
+    - name
+    - status
+    - created_at
+    - updated_at
+    - deleted_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    status:
+      $ref: ./enums/school-status.yaml#/SchoolStatus
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+
+SchoolCreateRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+    status:
+      $ref: ./enums/school-status.yaml#/SchoolStatus
+
+SchoolPatchRequest:
+  type: object
+  properties:
+    name:
+      type: string
+    status:
+      $ref: ./enums/school-status.yaml#/SchoolStatus
+
+Branch:
+  type: object
+  required:
+    - id
+    - school_id
+    - name
+    - address
+    - status
+    - created_at
+    - updated_at
+    - deleted_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    address:
+      type: string
+      nullable: true
+    status:
+      $ref: ./enums/branch-status.yaml#/BranchStatus
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+    deleted_at:
+      type: string
+      format: date-time
+      nullable: true
+
+BranchCreateRequest:
+  type: object
+  required:
+    - school_id
+    - name
+  properties:
+    school_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    address:
+      type: string
+      nullable: true
+    status:
+      $ref: ./enums/branch-status.yaml#/BranchStatus
+
+BranchPatchRequest:
+  type: object
+  properties:
+    school_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    address:
+      type: string
+      nullable: true
+    status:
+      $ref: ./enums/branch-status.yaml#/BranchStatus

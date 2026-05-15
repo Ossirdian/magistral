@@ -1,0 +1,6 @@
+Forbidden:
+  description: Forbidden
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

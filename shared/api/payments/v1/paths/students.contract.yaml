@@ -1,0 +1,32 @@
+put:
+  tags:
+    - StudentContracts
+  operationId: upsertStudentContract
+  summary: Create or update student contract
+  parameters:
+    - $ref: ../params/common.yaml#/StudentId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/StudentContractUpsertRequest
+  responses:
+    '200':
+      description: Student balance after contract upsert
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/student-balance-response.yaml#/StudentBalanceResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

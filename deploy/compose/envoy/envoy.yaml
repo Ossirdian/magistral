@@ -1,0 +1,262 @@
+static_resources:
+  listeners:
+    - name: ingress_http
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 8080
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                codec_type: AUTO
+                use_remote_address: true
+                generate_request_id: true
+                normalize_path: true
+                merge_slashes: true
+                route_config:
+                  name: ingress_routes
+                  virtual_hosts:
+                    - name: magistral
+                      domains: ["*"]
+                      cors:
+                        allow_origin_string_match:
+                          - safe_regex:
+                              google_re2: {}
+                              regex: ".*"
+                        allow_methods: "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+                        allow_headers: "authorization,content-type,x-requested-with,x-session-uuid,session-uuid"
+                        expose_headers: "x-trace-id,x-request-id"
+                        max_age: "86400"
+                      routes:
+                        - match:
+                            path: /healthz
+                          direct_response:
+                            status: 200
+                            body:
+                              inline_string: ok
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match:
+                            prefix: /api/iam/auth/login
+                          route:
+                            cluster: iam_http
+                            prefix_rewrite: /auth/login
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match:
+                            prefix: /api/iam/auth/refresh
+                          route:
+                            cluster: iam_http
+                            prefix_rewrite: /auth/refresh
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                        - match:
+                            prefix: /api/iam/
+                          route:
+                            cluster: iam_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/saas/
+                          route:
+                            cluster: saas_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/resources/
+                          route:
+                            cluster: resources_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/students/planning/requests
+                          route:
+                            cluster: lesson_http
+                            prefix_rewrite: /planning/requests
+                        - match:
+                            prefix: /api/students/
+                          route:
+                            cluster: student_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/lessons/
+                          route:
+                            cluster: lesson_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/payments/
+                          route:
+                            cluster: payment_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/documents/
+                          route:
+                            cluster: document_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /api/reporting/
+                          route:
+                            cluster: reporting_http
+                            prefix_rewrite: /
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: frontend_http
+                          typed_per_filter_config:
+                            envoy.filters.http.ext_authz:
+                              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthzPerRoute
+                              disabled: true
+                      response_headers_to_add:
+                        - header:
+                            key: x-gateway
+                            value: envoy
+                http_filters:
+                  - name: envoy.filters.http.cors
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+                  - name: envoy.filters.http.ext_authz
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+                      transport_api_version: V3
+                      clear_route_cache: true
+                      grpc_service:
+                        envoy_grpc:
+                          cluster_name: iam_authz_grpc
+                        timeout: 1s
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+    - name: frontend_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: frontend_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-frontend
+                      port_value: 80
+    - name: iam_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: iam_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-iam
+                      port_value: 8082
+    - name: iam_authz_grpc
+      type: STRICT_DNS
+      connect_timeout: 2s
+      http2_protocol_options: {}
+      load_assignment:
+        cluster_name: iam_authz_grpc
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-iam
+                      port_value: 50053
+    - name: saas_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: saas_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-saas
+                      port_value: 8081
+    - name: resources_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: resources_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-resources
+                      port_value: 8080
+    - name: student_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: student_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-student
+                      port_value: 8083
+    - name: lesson_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: lesson_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-lesson
+                      port_value: 8087
+    - name: payment_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: payment_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-payment
+                      port_value: 8084
+    - name: document_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: document_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-document
+                      port_value: 8085
+    - name: reporting_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: reporting_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-reporting
+                      port_value: 8086
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901

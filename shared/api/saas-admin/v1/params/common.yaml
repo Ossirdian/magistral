@@ -1,0 +1,63 @@
+SchoolId:
+  name: schoolId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+BranchId:
+  name: branchId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 50
+
+Offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0
+
+SchoolStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/school-status.yaml#/SchoolStatus
+
+BranchStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/branch-status.yaml#/BranchStatus
+
+SchoolFilterId:
+  name: school_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+Search:
+  name: search
+  in: query
+  required: false
+  schema:
+    type: string

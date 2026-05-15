@@ -1,0 +1,278 @@
+Meta:
+  type: object
+  required:
+    - limit
+    - offset
+    - count
+  properties:
+    limit:
+      type: integer
+      example: 50
+    offset:
+      type: integer
+      example: 0
+    count:
+      type: integer
+      example: 1
+
+Lesson:
+  type: object
+  required:
+    - id
+    - school_id
+    - student_id
+    - instructor_id
+    - car_id
+    - start_at
+    - end_at
+    - status
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    branch_id:
+      type: string
+      format: uuid
+      nullable: true
+    student_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+    car_id:
+      type: string
+      format: uuid
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    status:
+      $ref: ./enums/lesson-status.yaml#/LessonStatus
+    comment:
+      type: string
+      nullable: true
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+LessonCreateRequest:
+  type: object
+  required:
+    - student_id
+    - instructor_id
+    - car_id
+    - start_at
+    - end_at
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+      nullable: true
+    student_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+    car_id:
+      type: string
+      format: uuid
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    status:
+      $ref: ./enums/lesson-status.yaml#/LessonStatus
+    comment:
+      type: string
+      nullable: true
+
+LessonPatchRequest:
+  type: object
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+      nullable: true
+    student_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+    car_id:
+      type: string
+      format: uuid
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    status:
+      $ref: ./enums/lesson-status.yaml#/LessonStatus
+    comment:
+      type: string
+      nullable: true
+
+BatchLessonInput:
+  type: object
+  required:
+    - student_id
+    - instructor_id
+    - car_id
+    - start_at
+    - end_at
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+      nullable: true
+    student_id:
+      type: string
+      format: uuid
+    instructor_id:
+      type: string
+      format: uuid
+    car_id:
+      type: string
+      format: uuid
+    start_at:
+      type: string
+      format: date-time
+    end_at:
+      type: string
+      format: date-time
+    comment:
+      type: string
+      nullable: true
+
+BatchConflict:
+  type: object
+  required:
+    - index
+    - code
+    - message
+  properties:
+    index:
+      type: integer
+    code:
+      type: string
+    message:
+      type: string
+
+BatchApplyRequest:
+  type: object
+  required:
+    - mode
+    - lessons
+  properties:
+    mode:
+      $ref: ./enums/batch-apply-mode.yaml#/BatchApplyMode
+    lessons:
+      type: array
+      minItems: 1
+      items:
+        $ref: ./schemas.yaml#/BatchLessonInput
+
+BatchApplyResult:
+  type: object
+  required:
+    - lessons
+    - conflicts
+    - applied
+    - requested
+    - mode
+    - successful
+  properties:
+    lessons:
+      type: array
+      items:
+        $ref: ./schemas.yaml#/Lesson
+    conflicts:
+      type: array
+      items:
+        $ref: ./schemas.yaml#/BatchConflict
+    applied:
+      type: integer
+    requested:
+      type: integer
+    mode:
+      $ref: ./enums/batch-apply-mode.yaml#/BatchApplyMode
+    successful:
+      type: boolean
+
+PlanningReplaceStrategy:
+  type: string
+  enum:
+    - append
+    - merge
+    - replace_generated_only
+  example: append
+
+PlanningRequestCreateRequest:
+  type: object
+  required:
+    - period_start
+    - period_end
+    - replace_strategy
+  properties:
+    period_start:
+      type: string
+      format: date-time
+    period_end:
+      type: string
+      format: date-time
+    student_ids:
+      type: array
+      items:
+        type: string
+        format: uuid
+    group_ids:
+      type: array
+      items:
+        type: string
+        format: uuid
+    branch_ids:
+      type: array
+      items:
+        type: string
+        format: uuid
+    replace_strategy:
+      $ref: ./schemas.yaml#/PlanningReplaceStrategy
+    request_id:
+      type: string
+      nullable: true
+
+PlanningRequestAccepted:
+  type: object
+  required:
+    - request_id
+    - status
+  properties:
+    request_id:
+      type: string
+    status:
+      type: string
+      example: queued
+
+PlanningRequestResponse:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      $ref: ./schemas.yaml#/PlanningRequestAccepted

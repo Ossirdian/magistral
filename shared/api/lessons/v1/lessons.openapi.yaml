@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Lesson Service API
+  version: 1.0.0
+  description: API for managing lessons within the current school tenant.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/lessons/v1
+  package: lessonsv1
+tags:
+  - name: Lessons
+  - name: Internal
+paths:
+  /planning/requests:
+    $ref: ./paths/planning.requests.yaml
+  /lessons:
+    $ref: ./paths/lessons.collection.yaml
+  /lessons/{lessonId}:
+    $ref: ./paths/lessons.item.yaml
+  /internal/v1/lessons/batch:
+    $ref: ./paths/lessons.batch.yaml
+components:
+  parameters:
+    LessonId: { $ref: ./params/common.yaml#/LessonId }
+    BranchId: { $ref: ./params/common.yaml#/BranchId }
+    StudentId: { $ref: ./params/common.yaml#/StudentId }
+    InstructorId: { $ref: ./params/common.yaml#/InstructorId }
+    CarId: { $ref: ./params/common.yaml#/CarId }
+    LessonStatus: { $ref: ./params/common.yaml#/LessonStatus }
+    DateFrom: { $ref: ./params/common.yaml#/DateFrom }
+    DateTo: { $ref: ./params/common.yaml#/DateTo }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    LessonStatus: { $ref: ./components/enums/lesson-status.yaml#/LessonStatus }
+    BatchApplyMode: { $ref: ./components/enums/batch-apply-mode.yaml#/BatchApplyMode }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    Lesson: { $ref: ./components/schemas.yaml#/Lesson }
+    LessonCreateRequest: { $ref: ./components/schemas.yaml#/LessonCreateRequest }
+    LessonPatchRequest: { $ref: ./components/schemas.yaml#/LessonPatchRequest }
+    BatchLessonInput: { $ref: ./components/schemas.yaml#/BatchLessonInput }
+    BatchConflict: { $ref: ./components/schemas.yaml#/BatchConflict }
+    BatchApplyRequest: { $ref: ./components/schemas.yaml#/BatchApplyRequest }
+    BatchApplyResult: { $ref: ./components/schemas.yaml#/BatchApplyResult }
+    PlanningReplaceStrategy: { $ref: ./components/schemas.yaml#/PlanningReplaceStrategy }
+    PlanningRequestCreateRequest: { $ref: ./components/schemas.yaml#/PlanningRequestCreateRequest }
+    PlanningRequestAccepted: { $ref: ./components/schemas.yaml#/PlanningRequestAccepted }
+    PlanningRequestResponse: { $ref: ./components/schemas.yaml#/PlanningRequestResponse }
+    LessonResponse: { $ref: ./components/schemas/responses/lesson-response.yaml#/LessonResponse }
+    LessonListResponse: { $ref: ./components/schemas/responses/lesson-list-response.yaml#/LessonListResponse }
+    BatchApplyResponse: { $ref: ./components/schemas/responses/batch-apply-response.yaml#/BatchApplyResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+    DefaultError: { $ref: ./components/responses/default-error.yaml#/DefaultError }

@@ -1,0 +1,6 @@
+DocumentResponse:
+  type: object
+  required: [data]
+  properties:
+    data:
+      $ref: ../../schemas.yaml#/Document

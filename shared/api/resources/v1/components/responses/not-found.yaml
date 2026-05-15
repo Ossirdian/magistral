@@ -1,0 +1,6 @@
+NotFound:
+  description: Entity was not found within the current school scope.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

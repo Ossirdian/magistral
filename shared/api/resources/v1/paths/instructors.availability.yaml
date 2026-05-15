@@ -1,0 +1,56 @@
+get:
+  tags:
+    - InstructorAvailability
+  operationId: getInstructorAvailability
+  summary: Get instructor availability windows
+  parameters:
+    - $ref: ../params/common.yaml#/InstructorId
+  responses:
+    '200':
+      description: Availability windows.
+      content:
+        application/json:
+          schema:
+            $ref: ../resources.openapi.yaml#/components/schemas/AvailabilityWindowListResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+put:
+  tags:
+    - InstructorAvailability
+  operationId: replaceInstructorAvailability
+  summary: Replace instructor availability windows
+  parameters:
+    - $ref: ../params/common.yaml#/InstructorId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/AvailabilityReplaceRequest
+  responses:
+    '200':
+      description: Updated availability windows.
+      content:
+        application/json:
+          schema:
+            $ref: ../resources.openapi.yaml#/components/schemas/AvailabilityWindowListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+

@@ -1,0 +1,5 @@
+ResourceType:
+  type: string
+  enum:
+    - instructor
+    - car

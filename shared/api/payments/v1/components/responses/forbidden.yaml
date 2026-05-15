@@ -1,0 +1,6 @@
+Forbidden:
+  description: Access denied for current role.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

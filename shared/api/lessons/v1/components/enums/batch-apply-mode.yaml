@@ -1,0 +1,6 @@
+BatchApplyMode:
+  type: string
+  enum:
+    - append
+    - merge
+    - replace_generated_only

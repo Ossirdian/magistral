@@ -1,0 +1,26 @@
+post:
+  tags:
+    - Internal
+  operationId: applyLessonsBatch
+  summary: Apply generated schedule batch
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/BatchApplyRequest
+  responses:
+    '200':
+      description: Batch apply result.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/batch-apply-response.yaml#/BatchApplyResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

@@ -1,0 +1,79 @@
+openapi: 3.0.3
+info:
+  title: Resource Service API
+  version: 1.0.0
+  description: API for managing instructors, cars, availability windows, and car assignments.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/resources/v1
+  package: resourcesv1
+tags:
+  - name: Instructors
+  - name: InstructorAvailability
+  - name: Cars
+  - name: CarAvailability
+  - name: CarAssignment
+paths:
+  /resources/instructors:
+    $ref: ./paths/instructors.collection.yaml
+  /resources/instructors/{instructorId}:
+    $ref: ./paths/instructors.item.yaml
+  /resources/instructors/{instructorId}/availability:
+    $ref: ./paths/instructors.availability.yaml
+  /resources/cars:
+    $ref: ./paths/cars.collection.yaml
+  /resources/cars/{carId}:
+    $ref: ./paths/cars.item.yaml
+  /resources/cars/{carId}/availability:
+    $ref: ./paths/cars.availability.yaml
+  /resources/cars/{carId}/assign:
+    $ref: ./paths/cars.assign.yaml
+components:
+  parameters:
+    BranchId: { $ref: ./params/common.yaml#/BranchId }
+    InstructorId: { $ref: ./params/common.yaml#/InstructorId }
+    CarId: { $ref: ./params/common.yaml#/CarId }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    InstructorStatus: { $ref: ./params/common.yaml#/InstructorStatus }
+    AvailabilityStatus: { $ref: ./params/common.yaml#/AvailabilityStatus }
+    CarStatus: { $ref: ./params/common.yaml#/CarStatus }
+    InstructorFilterId: { $ref: ./params/common.yaml#/InstructorFilterId }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    InstructorStatus: { $ref: ./components/enums/instructor-status.yaml#/InstructorStatus }
+    CarStatus: { $ref: ./components/enums/car-status.yaml#/CarStatus }
+    TransmissionType: { $ref: ./components/enums/transmission-type.yaml#/TransmissionType }
+    AvailabilityStatus: { $ref: ./components/enums/availability-status.yaml#/AvailabilityStatus }
+    ResourceType: { $ref: ./components/enums/resource-type.yaml#/ResourceType }
+    AvailabilityWindowType: { $ref: ./components/enums/availability-window-type.yaml#/AvailabilityWindowType }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    Instructor: { $ref: ./components/schemas.yaml#/Instructor }
+    InstructorCreateRequest: { $ref: ./components/schemas.yaml#/InstructorCreateRequest }
+    InstructorPatchRequest: { $ref: ./components/schemas.yaml#/InstructorPatchRequest }
+    InstructorResponse: { $ref: ./components/schemas/responses/instructor-response.yaml#/InstructorResponse }
+    InstructorListResponse: { $ref: ./components/schemas/responses/instructor-list-response.yaml#/InstructorListResponse }
+    Car: { $ref: ./components/schemas.yaml#/Car }
+    CarCreateRequest: { $ref: ./components/schemas.yaml#/CarCreateRequest }
+    CarPatchRequest: { $ref: ./components/schemas.yaml#/CarPatchRequest }
+    CarResponse: { $ref: ./components/schemas/responses/car-response.yaml#/CarResponse }
+    CarListResponse: { $ref: ./components/schemas/responses/car-list-response.yaml#/CarListResponse }
+    AvailabilityWindow: { $ref: ./components/schemas.yaml#/AvailabilityWindow }
+    AvailabilityWindowInput: { $ref: ./components/schemas.yaml#/AvailabilityWindowInput }
+    AvailabilityReplaceRequest: { $ref: ./components/schemas.yaml#/AvailabilityReplaceRequest }
+    AvailabilityWindowListResponse: { $ref: ./components/schemas/responses/availability-window-list-response.yaml#/AvailabilityWindowListResponse }
+    CarAssignmentRequest: { $ref: ./components/schemas.yaml#/CarAssignmentRequest }
+    CarAssignmentResult: { $ref: ./components/schemas.yaml#/CarAssignmentResult }
+    CarAssignmentResponse: { $ref: ./components/schemas/responses/car-assignment-response.yaml#/CarAssignmentResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+

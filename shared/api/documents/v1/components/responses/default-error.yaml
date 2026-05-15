@@ -1,0 +1,6 @@
+DefaultError:
+  description: Unexpected error
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

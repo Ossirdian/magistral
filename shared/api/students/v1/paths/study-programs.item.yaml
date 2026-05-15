@@ -1,0 +1,76 @@
+get:
+  tags:
+    - Study Programs
+  operationId: getStudyProgram
+  summary: Get study program by id
+  parameters:
+    - $ref: ../params/common.yaml#/ProgramId
+  responses:
+    '200':
+      description: Study program details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/study-program-response.yaml#/StudyProgramResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+patch:
+  tags:
+    - Study Programs
+  operationId: patchStudyProgram
+  summary: Update study program partially
+  parameters:
+    - $ref: ../params/common.yaml#/ProgramId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/StudyProgramPatchRequest
+  responses:
+    '200':
+      description: Updated study program.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/study-program-response.yaml#/StudyProgramResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags:
+    - Study Programs
+  operationId: deleteStudyProgram
+  summary: Delete study program
+  parameters:
+    - $ref: ../params/common.yaml#/ProgramId
+  responses:
+    '204':
+      description: Study program deleted.
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

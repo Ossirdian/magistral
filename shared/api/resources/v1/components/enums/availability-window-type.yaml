@@ -1,0 +1,6 @@
+AvailabilityWindowType:
+  type: string
+  enum:
+    - working_hours
+    - vacation
+    - blackout

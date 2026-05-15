@@ -1,0 +1,7 @@
+PaymentType:
+  type: string
+  enum:
+    - cash
+    - card
+    - transfer
+    - other

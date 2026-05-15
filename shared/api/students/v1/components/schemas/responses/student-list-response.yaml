@@ -1,0 +1,12 @@
+StudentListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/Student
+    meta:
+      $ref: ../../schemas.yaml#/Meta

@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: Student Service API
+  version: 1.0.0
+  description: API for managing students within the current school tenant.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/students/v1
+  package: studentsv1
+tags:
+  - name: Students
+  - name: Groups
+  - name: Study Programs
+paths:
+  /students:
+    $ref: ./paths/students.collection.yaml
+  /students/{studentId}:
+    $ref: ./paths/students.item.yaml
+  /groups:
+    $ref: ./paths/groups.collection.yaml
+  /groups/{groupId}:
+    $ref: ./paths/groups.item.yaml
+  /study-programs:
+    $ref: ./paths/study-programs.collection.yaml
+  /study-programs/{programId}:
+    $ref: ./paths/study-programs.item.yaml
+components:
+  parameters:
+    StudentId: { $ref: ./params/common.yaml#/StudentId }
+    GroupId: { $ref: ./params/common.yaml#/GroupId }
+    ProgramId: { $ref: ./params/common.yaml#/ProgramId }
+    BranchId: { $ref: ./params/common.yaml#/BranchId }
+    StudentStatus: { $ref: ./params/common.yaml#/StudentStatus }
+    Search: { $ref: ./params/common.yaml#/Search }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    StudentStatus: { $ref: ./components/enums/student-status.yaml#/StudentStatus }
+    TransmissionType: { $ref: ./components/enums/transmission-type.yaml#/TransmissionType }
+    StudentPreferredWeekday: { $ref: ./components/enums/student-preferred-weekday.yaml#/StudentPreferredWeekday }
+    StudentPreferredTimeWindow: { $ref: ./components/enums/student-preferred-time-window.yaml#/StudentPreferredTimeWindow }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    Student: { $ref: ./components/schemas.yaml#/Student }
+    StudentCreateRequest: { $ref: ./components/schemas.yaml#/StudentCreateRequest }
+    StudentPatchRequest: { $ref: ./components/schemas.yaml#/StudentPatchRequest }
+    Group: { $ref: ./components/schemas.yaml#/Group }
+    GroupCreateRequest: { $ref: ./components/schemas.yaml#/GroupCreateRequest }
+    GroupPatchRequest: { $ref: ./components/schemas.yaml#/GroupPatchRequest }
+    StudyProgram: { $ref: ./components/schemas.yaml#/StudyProgram }
+    StudyProgramCreateRequest: { $ref: ./components/schemas.yaml#/StudyProgramCreateRequest }
+    StudyProgramPatchRequest: { $ref: ./components/schemas.yaml#/StudyProgramPatchRequest }
+    StudentResponse: { $ref: ./components/schemas/responses/student-response.yaml#/StudentResponse }
+    StudentListResponse: { $ref: ./components/schemas/responses/student-list-response.yaml#/StudentListResponse }
+    GroupResponse: { $ref: ./components/schemas/responses/group-response.yaml#/GroupResponse }
+    GroupListResponse: { $ref: ./components/schemas/responses/group-list-response.yaml#/GroupListResponse }
+    StudyProgramResponse: { $ref: ./components/schemas/responses/study-program-response.yaml#/StudyProgramResponse }
+    StudyProgramListResponse: { $ref: ./components/schemas/responses/study-program-list-response.yaml#/StudyProgramListResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+    DefaultError: { $ref: ./components/responses/default-error.yaml#/DefaultError }

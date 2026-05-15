@@ -1,0 +1,152 @@
+Meta:
+  type: object
+  required: [limit, offset, count]
+  properties:
+    limit:
+      type: integer
+    offset:
+      type: integer
+    count:
+      type: integer
+
+Document:
+  type: object
+  required:
+    - id
+    - school_id
+    - student_id
+    - type
+    - title
+    - status
+    - object_key
+    - mime_type
+    - size
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    student_id:
+      type: string
+      format: uuid
+    type:
+      type: string
+    title:
+      type: string
+    status:
+      $ref: ./enums/document-status.yaml#/DocumentStatus
+    object_key:
+      type: string
+    mime_type:
+      type: string
+    size:
+      type: integer
+      format: int64
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+DocumentUploadRequest:
+  type: object
+  required: [student_id, type, title, mime_type, file_name, content_base64]
+  properties:
+    student_id:
+      type: string
+      format: uuid
+    type:
+      type: string
+    title:
+      type: string
+    mime_type:
+      type: string
+    file_name:
+      type: string
+    content_base64:
+      type: string
+
+DocumentGenerateRequest:
+  type: object
+  required: [student_id, template_id, title]
+  properties:
+    student_id:
+      type: string
+      format: uuid
+    template_id:
+      type: string
+      format: uuid
+    title:
+      type: string
+    file_name:
+      type: string
+    placeholders:
+      type: object
+      additionalProperties:
+        type: string
+
+DocumentDownload:
+  type: object
+  required: [document_id, file_name, mime_type, content_base64]
+  properties:
+    document_id:
+      type: string
+      format: uuid
+    file_name:
+      type: string
+    mime_type:
+      type: string
+    content_base64:
+      type: string
+
+DocumentTemplate:
+  type: object
+  required: [id, school_id, name, type, content, created_at, updated_at]
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    type:
+      type: string
+    content:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+DocumentTemplateCreateRequest:
+  type: object
+  required: [name, type, content]
+  properties:
+    name:
+      type: string
+    type:
+      type: string
+    content:
+      type: string
+
+DocumentTemplatePatchRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      nullable: true
+    type:
+      type: string
+      nullable: true
+    content:
+      type: string
+      nullable: true

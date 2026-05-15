@@ -1,0 +1,56 @@
+get:
+  tags:
+    - Instructors
+  operationId: listInstructors
+  summary: List instructors
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+    - $ref: ../params/common.yaml#/InstructorStatus
+    - $ref: ../params/common.yaml#/AvailabilityStatus
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Paginated instructors list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/instructor-list-response.yaml#/InstructorListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Instructors
+  operationId: createInstructor
+  summary: Create instructor
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/InstructorCreateRequest
+  responses:
+    '201':
+      description: Created instructor.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/instructor-response.yaml#/InstructorResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+

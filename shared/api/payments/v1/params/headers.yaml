@@ -1,0 +1,20 @@
+Authorization:
+  name: Authorization
+  in: header
+  required: false
+  schema:
+    type: string
+
+XRequestID:
+  name: X-Request-Id
+  in: header
+  required: false
+  schema:
+    type: string
+
+XCorrelationID:
+  name: X-Correlation-Id
+  in: header
+  required: false
+  schema:
+    type: string

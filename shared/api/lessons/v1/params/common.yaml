@@ -1,0 +1,81 @@
+LessonId:
+  name: lessonId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+BranchId:
+  name: branch_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+StudentId:
+  name: student_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+InstructorId:
+  name: instructor_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+CarId:
+  name: car_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+LessonStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/lesson-status.yaml#/LessonStatus
+
+DateFrom:
+  name: date_from
+  in: query
+  required: false
+  schema:
+    type: string
+    format: date-time
+
+DateTo:
+  name: date_to
+  in: query
+  required: false
+  schema:
+    type: string
+    format: date-time
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 50
+
+Offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0

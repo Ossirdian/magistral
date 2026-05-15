@@ -1,0 +1,12 @@
+InstructorListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/Instructor
+    meta:
+      $ref: ../../schemas.yaml#/Meta

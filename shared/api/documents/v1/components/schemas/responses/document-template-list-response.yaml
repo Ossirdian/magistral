@@ -1,0 +1,10 @@
+DocumentTemplateListResponse:
+  type: object
+  required: [data, meta]
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/DocumentTemplate
+    meta:
+      $ref: ../../schemas.yaml#/Meta

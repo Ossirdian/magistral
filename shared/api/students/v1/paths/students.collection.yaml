@@ -1,0 +1,56 @@
+get:
+  tags:
+    - Students
+  operationId: listStudents
+  summary: List students
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+    - $ref: ../params/common.yaml#/GroupIdQuery
+    - $ref: ../params/common.yaml#/StudentStatus
+    - $ref: ../params/common.yaml#/Search
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Paginated students list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/student-list-response.yaml#/StudentListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Students
+  operationId: createStudent
+  summary: Create student
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/StudentCreateRequest
+  responses:
+    '201':
+      description: Created student.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/student-response.yaml#/StudentResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

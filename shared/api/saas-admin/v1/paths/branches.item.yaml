@@ -1,0 +1,76 @@
+get:
+  tags:
+    - Branches
+  operationId: getBranch
+  summary: Get branch by id
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+  responses:
+    '200':
+      description: Branch details.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/branch-response.yaml#/BranchResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+patch:
+  tags:
+    - Branches
+  operationId: patchBranch
+  summary: Update branch partially
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/BranchPatchRequest
+  responses:
+    '200':
+      description: Updated branch.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/branch-response.yaml#/BranchResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags:
+    - Branches
+  operationId: deleteBranch
+  summary: Soft delete branch
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+  responses:
+    '204':
+      description: Branch deleted.
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

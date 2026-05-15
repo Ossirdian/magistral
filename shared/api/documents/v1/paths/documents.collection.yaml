@@ -1,0 +1,25 @@
+get:
+  tags: [Documents]
+  operationId: listDocuments
+  parameters:
+    - $ref: ../params/common.yaml#/StudentFilterId
+    - $ref: ../params/common.yaml#/DocumentType
+    - $ref: ../params/common.yaml#/DocumentStatus
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '200':
+      description: Document list
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-list-response.yaml#/DocumentListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

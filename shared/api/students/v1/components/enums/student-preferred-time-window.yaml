@@ -1,0 +1,6 @@
+StudentPreferredTimeWindow:
+  type: string
+  enum:
+    - morning
+    - daytime
+    - evening

@@ -1,0 +1,73 @@
+BranchId:
+  name: branch_id
+  in: query
+  description: Branch filter within current school.
+  required: false
+  schema:
+    type: string
+    format: uuid
+
+InstructorId:
+  name: instructorId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+CarId:
+  name: carId
+  in: path
+  required: true
+  schema:
+    type: string
+    format: uuid
+
+Limit:
+  name: limit
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+    maximum: 100
+    default: 50
+
+Offset:
+  name: offset
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 0
+    default: 0
+
+InstructorStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/instructor-status.yaml#/InstructorStatus
+
+AvailabilityStatus:
+  name: availability_status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/availability-status.yaml#/AvailabilityStatus
+
+CarStatus:
+  name: status
+  in: query
+  required: false
+  schema:
+    $ref: ../components/enums/car-status.yaml#/CarStatus
+
+InstructorFilterId:
+  name: instructor_id
+  in: query
+  required: false
+  schema:
+    type: string
+    format: uuid
+

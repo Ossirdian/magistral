@@ -1,0 +1,59 @@
+get:
+  tags:
+    - Lessons
+  operationId: listLessons
+  summary: List lessons
+  parameters:
+    - $ref: ../params/common.yaml#/BranchId
+    - $ref: ../params/common.yaml#/StudentId
+    - $ref: ../params/common.yaml#/InstructorId
+    - $ref: ../params/common.yaml#/CarId
+    - $ref: ../params/common.yaml#/LessonStatus
+    - $ref: ../params/common.yaml#/DateFrom
+    - $ref: ../params/common.yaml#/DateTo
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Paginated lessons list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/lesson-list-response.yaml#/LessonListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Lessons
+  operationId: createLesson
+  summary: Create lesson
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/LessonCreateRequest
+  responses:
+    '201':
+      description: Created lesson.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/lesson-response.yaml#/LessonResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

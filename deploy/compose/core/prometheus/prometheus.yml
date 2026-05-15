@@ -1,0 +1,57 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: iam
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-iam:8082"]
+
+  - job_name: saas
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-saas:8081"]
+
+  - job_name: resources
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-resources:8080"]
+
+  - job_name: student
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-student:8083"]
+
+  - job_name: lesson
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-lesson:8087"]
+
+  - job_name: payment
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-payment:8084"]
+
+  - job_name: document
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-document:8085"]
+
+  - job_name: reporting
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-reporting:8086"]
+
+  - job_name: planning
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["app-planning:9101"]
+
+  - job_name: envoy
+    metrics_path: /stats/prometheus
+    static_configs:
+      - targets: ["app-envoy:9901"]

@@ -1,0 +1,6 @@
+CarStatus:
+  type: string
+  enum:
+    - active
+    - inactive
+    - maintenance

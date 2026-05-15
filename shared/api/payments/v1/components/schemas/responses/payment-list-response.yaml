@@ -1,0 +1,12 @@
+PaymentListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/Payment
+    meta:
+      $ref: ../../schemas.yaml#/Meta

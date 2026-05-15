@@ -1,0 +1,51 @@
+get:
+  tags:
+    - Payments
+  operationId: listPayments
+  summary: List payments
+  parameters:
+    - $ref: ../params/common.yaml#/StudentFilterId
+    - $ref: ../params/common.yaml#/PaymentType
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Payment list
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/payment-list-response.yaml#/PaymentListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+post:
+  tags:
+    - Payments
+  operationId: createPayment
+  summary: Create payment
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/PaymentCreateRequest
+  responses:
+    '200':
+      description: Payment created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/payment-response.yaml#/PaymentResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

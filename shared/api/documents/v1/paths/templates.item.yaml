@@ -1,0 +1,49 @@
+patch:
+  tags: [DocumentTemplates]
+  operationId: patchDocumentTemplate
+  parameters:
+    - $ref: ../params/common.yaml#/TemplateId
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/DocumentTemplatePatchRequest
+  responses:
+    '200':
+      description: Updated template
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-template-response.yaml#/DocumentTemplateResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags: [DocumentTemplates]
+  operationId: deleteDocumentTemplate
+  parameters:
+    - $ref: ../params/common.yaml#/TemplateId
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '204':
+      description: Template deleted
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

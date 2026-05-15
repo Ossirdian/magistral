@@ -1,0 +1,53 @@
+openapi: 3.0.3
+info:
+  title: Payment Service API
+  version: 1.0.0
+  description: API for managing student payments and contract balances within the current school tenant.
+servers:
+  - url: /api/v1
+x-ogen:
+  target: shared/pkg/payments/v1
+  package: paymentsv1
+tags:
+  - name: Payments
+  - name: StudentContracts
+paths:
+  /payments:
+    $ref: ./paths/payments.collection.yaml
+  /payments/{paymentId}:
+    $ref: ./paths/payments.item.yaml
+  /payments/students/{studentId}/balance:
+    $ref: ./paths/students.balance.yaml
+  /payments/students/{studentId}/contract:
+    $ref: ./paths/students.contract.yaml
+components:
+  parameters:
+    PaymentId: { $ref: ./params/common.yaml#/PaymentId }
+    StudentId: { $ref: ./params/common.yaml#/StudentId }
+    StudentFilterId: { $ref: ./params/common.yaml#/StudentFilterId }
+    PaymentType: { $ref: ./params/common.yaml#/PaymentType }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    PaymentType: { $ref: ./components/enums/payment-type.yaml#/PaymentType }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    Payment: { $ref: ./components/schemas.yaml#/Payment }
+    PaymentCreateRequest: { $ref: ./components/schemas.yaml#/PaymentCreateRequest }
+    PaymentPatchRequest: { $ref: ./components/schemas.yaml#/PaymentPatchRequest }
+    StudentBalance: { $ref: ./components/schemas.yaml#/StudentBalance }
+    StudentContractUpsertRequest: { $ref: ./components/schemas.yaml#/StudentContractUpsertRequest }
+    PaymentResponse: { $ref: ./components/schemas/responses/payment-response.yaml#/PaymentResponse }
+    PaymentListResponse: { $ref: ./components/schemas/responses/payment-list-response.yaml#/PaymentListResponse }
+    StudentBalanceResponse: { $ref: ./components/schemas/responses/student-balance-response.yaml#/StudentBalanceResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+    DefaultError: { $ref: ./components/responses/default-error.yaml#/DefaultError }

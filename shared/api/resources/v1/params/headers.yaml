@@ -1,0 +1,23 @@
+Authorization:
+  name: Authorization
+  in: header
+  required: false
+  description: Bearer access token.
+  schema:
+    type: string
+
+XRequestID:
+  name: X-Request-ID
+  in: header
+  required: false
+  description: Client request identifier for tracing.
+  schema:
+    type: string
+
+XCorrelationID:
+  name: X-Correlation-ID
+  in: header
+  required: false
+  description: Cross-service correlation identifier.
+  schema:
+    type: string

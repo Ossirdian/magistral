@@ -1,0 +1,12 @@
+BranchListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/Branch
+    meta:
+      $ref: ../../schemas.yaml#/Meta

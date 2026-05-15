@@ -1,0 +1,6 @@
+AvailabilityStatus:
+  type: string
+  enum:
+    - available
+    - unavailable
+    - partial

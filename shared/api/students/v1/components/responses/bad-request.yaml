@@ -1,0 +1,6 @@
+BadRequest:
+  description: Invalid request payload or parameters.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

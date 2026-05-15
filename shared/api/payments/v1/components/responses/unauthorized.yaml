@@ -1,0 +1,6 @@
+Unauthorized:
+  description: Missing or invalid access token.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

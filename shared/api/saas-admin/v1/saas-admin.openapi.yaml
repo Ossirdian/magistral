@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: SaaS Admin Service API
+  version: 1.0.0
+  description: API for managing schools and branches at the platform super-admin level.
+servers:
+  - url: /api/v1/saas-admin
+x-ogen:
+  target: shared/pkg/saasadmin/v1
+  package: saasadminv1
+tags:
+  - name: Schools
+  - name: Branches
+paths:
+  /schools:
+    $ref: ./paths/schools.collection.yaml
+  /schools/{schoolId}:
+    $ref: ./paths/schools.item.yaml
+  /branches:
+    $ref: ./paths/branches.collection.yaml
+  /branches/{branchId}:
+    $ref: ./paths/branches.item.yaml
+components:
+  parameters:
+    SchoolId: { $ref: ./params/common.yaml#/SchoolId }
+    BranchId: { $ref: ./params/common.yaml#/BranchId }
+    Limit: { $ref: ./params/common.yaml#/Limit }
+    Offset: { $ref: ./params/common.yaml#/Offset }
+    SchoolStatus: { $ref: ./params/common.yaml#/SchoolStatus }
+    BranchStatus: { $ref: ./params/common.yaml#/BranchStatus }
+    SchoolFilterId: { $ref: ./params/common.yaml#/SchoolFilterId }
+    Search: { $ref: ./params/common.yaml#/Search }
+    Authorization: { $ref: ./params/headers.yaml#/Authorization }
+    XRequestID: { $ref: ./params/headers.yaml#/XRequestID }
+    XCorrelationID: { $ref: ./params/headers.yaml#/XCorrelationID }
+  schemas:
+    SchoolStatus: { $ref: ./components/enums/school-status.yaml#/SchoolStatus }
+    BranchStatus: { $ref: ./components/enums/branch-status.yaml#/BranchStatus }
+    Meta: { $ref: ./components/schemas.yaml#/Meta }
+    ErrorBody: { $ref: ./components/errors/error-body.yaml#/ErrorBody }
+    ErrorObject: { $ref: ./components/errors/error-object.yaml#/ErrorObject }
+    School: { $ref: ./components/schemas.yaml#/School }
+    SchoolCreateRequest: { $ref: ./components/schemas.yaml#/SchoolCreateRequest }
+    SchoolPatchRequest: { $ref: ./components/schemas.yaml#/SchoolPatchRequest }
+    SchoolResponse: { $ref: ./components/schemas/responses/school-response.yaml#/SchoolResponse }
+    SchoolListResponse: { $ref: ./components/schemas/responses/school-list-response.yaml#/SchoolListResponse }
+    Branch: { $ref: ./components/schemas.yaml#/Branch }
+    BranchCreateRequest: { $ref: ./components/schemas.yaml#/BranchCreateRequest }
+    BranchPatchRequest: { $ref: ./components/schemas.yaml#/BranchPatchRequest }
+    BranchResponse: { $ref: ./components/schemas/responses/branch-response.yaml#/BranchResponse }
+    BranchListResponse: { $ref: ./components/schemas/responses/branch-list-response.yaml#/BranchListResponse }
+  responses:
+    BadRequest: { $ref: ./components/responses/bad-request.yaml#/BadRequest }
+    Unauthorized: { $ref: ./components/responses/unauthorized.yaml#/Unauthorized }
+    Forbidden: { $ref: ./components/responses/forbidden.yaml#/Forbidden }
+    NotFound: { $ref: ./components/responses/not-found.yaml#/NotFound }
+    Conflict: { $ref: ./components/responses/conflict.yaml#/Conflict }
+    DefaultError: { $ref: ./components/responses/default-error.yaml#/DefaultError }

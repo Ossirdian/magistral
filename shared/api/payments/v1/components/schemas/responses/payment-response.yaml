@@ -1,0 +1,7 @@
+PaymentResponse:
+  type: object
+  required:
+    - data
+  properties:
+    data:
+      $ref: ../../schemas.yaml#/Payment

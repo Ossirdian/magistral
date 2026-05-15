@@ -1,0 +1,52 @@
+get:
+  tags: [DocumentTemplates]
+  operationId: listDocumentTemplates
+  parameters:
+    - $ref: ../params/common.yaml#/TemplateType
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '200':
+      description: Template list
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-template-list-response.yaml#/DocumentTemplateListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags: [DocumentTemplates]
+  operationId: createDocumentTemplate
+  parameters:
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/DocumentTemplateCreateRequest
+  responses:
+    '200':
+      description: Created template
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-template-response.yaml#/DocumentTemplateResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

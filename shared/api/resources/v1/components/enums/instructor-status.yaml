@@ -1,0 +1,6 @@
+InstructorStatus:
+  type: string
+  enum:
+    - active
+    - inactive
+    - on_leave

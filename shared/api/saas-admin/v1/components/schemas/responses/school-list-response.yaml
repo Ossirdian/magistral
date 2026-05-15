@@ -1,0 +1,12 @@
+SchoolListResponse:
+  type: object
+  required:
+    - data
+    - meta
+  properties:
+    data:
+      type: array
+      items:
+        $ref: ../../schemas.yaml#/School
+    meta:
+      $ref: ../../schemas.yaml#/Meta

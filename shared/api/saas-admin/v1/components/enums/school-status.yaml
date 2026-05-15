@@ -1,0 +1,6 @@
+SchoolStatus:
+  type: string
+  enum:
+    - active
+    - inactive
+    - suspended

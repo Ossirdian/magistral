@@ -1,0 +1,39 @@
+get:
+  tags: [Documents]
+  operationId: getDocument
+  parameters:
+    - $ref: ../params/common.yaml#/DocumentId
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '200':
+      description: Document metadata
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-response.yaml#/DocumentResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+delete:
+  tags: [Documents]
+  operationId: deleteDocument
+  parameters:
+    - $ref: ../params/common.yaml#/DocumentId
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '204':
+      description: Document deleted
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

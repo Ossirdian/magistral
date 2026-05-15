@@ -1,0 +1,6 @@
+Conflict:
+  description: Request conflicts with current state.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

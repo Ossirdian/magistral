@@ -1,0 +1,254 @@
+Meta:
+  type: object
+  required:
+    - limit
+    - offset
+    - count
+  properties:
+    limit:
+      type: integer
+      example: 50
+    offset:
+      type: integer
+      example: 0
+    count:
+      type: integer
+      example: 1
+
+Student:
+  type: object
+  required:
+    - id
+    - school_id
+    - branch_id
+    - full_name
+    - phone
+    - status
+    - manual_hours_completed
+    - lesson_hours_completed
+    - total_hours_completed
+    - remaining_hours
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    branch_id:
+      type: string
+      format: uuid
+    group_id:
+      type: string
+      format: uuid
+      nullable: true
+    program_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+    status:
+      $ref: ./enums/student-status.yaml#/StudentStatus
+    preferred_weekdays:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-weekday.yaml#/StudentPreferredWeekday
+    preferred_time_windows:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-time-window.yaml#/StudentPreferredTimeWindow
+    manual_hours_completed:
+      type: number
+      format: double
+    lesson_hours_completed:
+      type: number
+      format: double
+    total_hours_completed:
+      type: number
+      format: double
+    remaining_hours:
+      type: number
+      format: double
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+StudentCreateRequest:
+  type: object
+  required:
+    - branch_id
+    - program_id
+    - full_name
+    - phone
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    group_id:
+      type: string
+      format: uuid
+      nullable: true
+    program_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+    status:
+      $ref: ./enums/student-status.yaml#/StudentStatus
+    preferred_weekdays:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-weekday.yaml#/StudentPreferredWeekday
+    preferred_time_windows:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-time-window.yaml#/StudentPreferredTimeWindow
+    manual_hours_completed:
+      type: number
+      format: double
+
+StudentPatchRequest:
+  type: object
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    group_id:
+      type: string
+      format: uuid
+      nullable: true
+    program_id:
+      type: string
+      format: uuid
+    full_name:
+      type: string
+    phone:
+      type: string
+    status:
+      $ref: ./enums/student-status.yaml#/StudentStatus
+    preferred_weekdays:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-weekday.yaml#/StudentPreferredWeekday
+    preferred_time_windows:
+      type: array
+      items:
+        $ref: ./enums/student-preferred-time-window.yaml#/StudentPreferredTimeWindow
+    manual_hours_completed:
+      type: number
+      format: double
+
+StudyProgram:
+  type: object
+  required:
+    - id
+    - school_id
+    - name
+    - transmission
+    - total_hours
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    total_hours:
+      type: number
+      format: double
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+StudyProgramCreateRequest:
+  type: object
+  required:
+    - name
+    - transmission
+    - total_hours
+  properties:
+    name:
+      type: string
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    total_hours:
+      type: number
+      format: double
+
+StudyProgramPatchRequest:
+  type: object
+  properties:
+    name:
+      type: string
+    transmission:
+      $ref: ./enums/transmission-type.yaml#/TransmissionType
+    total_hours:
+      type: number
+      format: double
+
+Group:
+  type: object
+  required:
+    - id
+    - school_id
+    - branch_id
+    - name
+    - created_at
+    - updated_at
+  properties:
+    id:
+      type: string
+      format: uuid
+    school_id:
+      type: string
+      format: uuid
+    branch_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    created_at:
+      type: string
+      format: date-time
+    updated_at:
+      type: string
+      format: date-time
+
+GroupCreateRequest:
+  type: object
+  required:
+    - branch_id
+    - name
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    name:
+      type: string
+
+GroupPatchRequest:
+  type: object
+  properties:
+    branch_id:
+      type: string
+      format: uuid
+    name:
+      type: string

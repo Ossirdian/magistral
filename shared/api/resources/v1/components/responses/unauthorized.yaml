@@ -1,0 +1,6 @@
+Unauthorized:
+  description: Missing trusted headers or upstream authorization failed.
+  content:
+    application/json:
+      schema:
+        $ref: ../errors/error-body.yaml#/ErrorBody

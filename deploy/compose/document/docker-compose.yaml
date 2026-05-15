@@ -1,0 +1,34 @@
+services:
+  app-document:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/document/Dockerfile
+    image: ${APP_IMAGE_NAME}
+    container_name: app-document
+    env_file:
+      - .env
+    expose:
+      - "${HTTP_PORT}"
+    volumes:
+      - document_storage_data:${STORAGE_ROOT}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${HTTP_PORT}/healthz > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "app-document"
+    restart: unless-stopped
+    networks:
+      - magistral-microservices
+
+volumes:
+  document_storage_data:
+
+networks:
+  magistral-microservices:
+    name: magistral-microservices
+    external: true

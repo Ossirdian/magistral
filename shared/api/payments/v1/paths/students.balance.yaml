@@ -1,0 +1,20 @@
+get:
+  tags:
+    - StudentContracts
+  operationId: getStudentBalance
+  summary: Get student balance
+  parameters:
+    - $ref: ../params/common.yaml#/StudentId
+  responses:
+    '200':
+      description: Student balance
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/student-balance-response.yaml#/StudentBalanceResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

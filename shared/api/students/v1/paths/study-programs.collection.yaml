@@ -1,0 +1,53 @@
+get:
+  tags:
+    - Study Programs
+  operationId: listStudyPrograms
+  summary: List study programs
+  parameters:
+    - $ref: ../params/common.yaml#/Search
+    - $ref: ../params/common.yaml#/Limit
+    - $ref: ../params/common.yaml#/Offset
+  responses:
+    '200':
+      description: Paginated study programs list.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/study-program-list-response.yaml#/StudyProgramListResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
+
+post:
+  tags:
+    - Study Programs
+  operationId: createStudyProgram
+  summary: Create study program
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/schemas.yaml#/StudyProgramCreateRequest
+  responses:
+    '201':
+      description: Created study program.
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/study-program-response.yaml#/StudyProgramResponse
+    '400':
+      $ref: ../components/responses/bad-request.yaml#/BadRequest
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '403':
+      $ref: ../components/responses/forbidden.yaml#/Forbidden
+    '409':
+      $ref: ../components/responses/conflict.yaml#/Conflict
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError

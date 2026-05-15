@@ -1,0 +1,7 @@
+LessonStatus:
+  type: string
+  enum:
+    - scheduled
+    - completed
+    - cancelled
+    - missed

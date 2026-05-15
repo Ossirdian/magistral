@@ -1,0 +1,21 @@
+get:
+  tags: [Documents]
+  operationId: downloadDocument
+  parameters:
+    - $ref: ../params/common.yaml#/DocumentId
+    - $ref: ../params/headers.yaml#/Authorization
+    - $ref: ../params/headers.yaml#/XRequestID
+    - $ref: ../params/headers.yaml#/XCorrelationID
+  responses:
+    '200':
+      description: Downloaded document
+      content:
+        application/json:
+          schema:
+            $ref: ../components/schemas/responses/document-download-response.yaml#/DocumentDownloadResponse
+    '401':
+      $ref: ../components/responses/unauthorized.yaml#/Unauthorized
+    '404':
+      $ref: ../components/responses/not-found.yaml#/NotFound
+    default:
+      $ref: ../components/responses/default-error.yaml#/DefaultError
