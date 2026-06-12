@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	auditpkg "github.com/ossirdian/magistral/platform/pkg/audit"
 	"github.com/ossirdian/magistral/platform/pkg/closer"
 	platformgrpc "github.com/ossirdian/magistral/platform/pkg/grpc/health"
 	"github.com/ossirdian/magistral/platform/pkg/httpx"
@@ -115,7 +116,7 @@ func New(ctx context.Context, cfg *env.Config) (*App, error) {
 
 	httpServer := &http.Server{
 		Addr:              cfg.HTTP().Addr(),
-		Handler:           ptracing.HTTPMiddleware("student-http", pmetrics.HTTPMiddleware(httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins()))),
+		Handler:           ptracing.HTTPMiddleware("student-http", pmetrics.HTTPMiddleware(auditpkg.Middleware("student", httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins())))),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

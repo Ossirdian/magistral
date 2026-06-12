@@ -23,8 +23,19 @@ const transmissionTypeOptions = ["manual", "automatic"];
 const studentPreferredWeekdayOptions = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 const studentPreferredTimeWindowOptions = ["morning", "daytime", "evening"];
 const lessonStatusOptions = ["scheduled", "completed", "cancelled", "missed"];
+const lessonSortOptions = [
+  ["start_at", "Дате"],
+  ["student_id", "Ученику"],
+  ["car_id", "Авто"],
+  ["instructor_id", "Инструктору"],
+];
 const paymentTypeOptions = ["cash", "card", "transfer", "other"];
 const planningReplaceStrategies = ["append", "merge", "replace_generated_only"];
+
+function shortId(value) {
+  if (!value) return "n/a";
+  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
+}
 
 function readSession() {
   try {
@@ -71,6 +82,17 @@ function formatMoney(value) {
   }).format(amount);
 }
 
+function formatCompactNumber(value) {
+  if (value === undefined || value === null || value === "") return "—";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return String(value);
+  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(number);
+}
+
+function planningRequestId(value) {
+  return value?.request_id || value?.requestID || value?.requestId || "";
+}
+
 function asLocalDateTime(value) {
   if (!value) return "";
   const date = new Date(value);
@@ -81,6 +103,24 @@ function asLocalDateTime(value) {
 function toIso(value) {
   if (!value) return null;
   return new Date(value).toISOString();
+}
+
+function localDateKey(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  const shifted = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return shifted.toISOString().slice(0, 10);
+}
+
+function groupLessonsByDate(items) {
+  return Object.entries(
+    items.reduce((acc, item) => {
+      const key = localDateKey(item.start_at);
+      if (!key) return acc;
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {})
+  ).sort(([left], [right]) => left.localeCompare(right));
 }
 
 function todayDateInput() {
@@ -239,9 +279,20 @@ function App() {
   const [studyPrograms, setStudyPrograms] = useState([]);
   const [groups, setGroups] = useState([]);
   const [lessons, setLessons] = useState([]);
+  const [lessonFilters, setLessonFilters] = useState({
+    student_id: "",
+    instructor_id: "",
+    car_id: "",
+    status: "",
+    date_from: "",
+    date_to: "",
+    sort_by: "start_at",
+    sort_order: "asc",
+  });
   const [payments, setPayments] = useState([]);
   const [documents, setDocuments] = useState([]);
   const [documentTemplates, setDocumentTemplates] = useState([]);
+  const [planningRequests, setPlanningRequests] = useState([]);
   const [reportingDashboard, setReportingDashboard] = useState(null);
   const [reportingStudents, setReportingStudents] = useState(null);
   const [reportingLessons, setReportingLessons] = useState(null);
@@ -249,6 +300,7 @@ function App() {
   const [reportingInstructorWorkload, setReportingInstructorWorkload] = useState([]);
   const [reportingCarsUtilization, setReportingCarsUtilization] = useState([]);
   const [reportingFilters, setReportingFilters] = useState({ branch_id: "", group_id: "", month: "" });
+  const [auditEvents, setAuditEvents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
   const [studentBalance, setStudentBalance] = useState(null);
   const [studentGroupFilter, setStudentGroupFilter] = useState("");
@@ -269,6 +321,7 @@ function App() {
   const paymentsApi = (path, options) => request("/api/payments", path, options);
   const documentsApi = (path, options) => request("/api/documents", path, options);
   const reportingApi = (path, options) => request("/api/reporting", path, options);
+  const auditApi = (path, options) => request("/api/audit", path, options);
 
   const isSuperAdmin = me?.role === "super_admin";
   const canWriteWorkspace = me?.role === "admin";
@@ -305,6 +358,11 @@ function App() {
   const filteredStudents = useMemo(
     () => (studentGroupFilter ? students.filter((item) => item.group_id === studentGroupFilter) : students),
     [studentGroupFilter, students]
+  );
+  const lessonsByDate = useMemo(() => groupLessonsByDate(lessons), [lessons]);
+  const maxLessonsPerDate = useMemo(
+    () => Math.max(1, ...lessonsByDate.map(([, count]) => count)),
+    [lessonsByDate]
   );
 
   const selectedResourceCollection = selectedResourceType === "cars" ? cars : instructors;
@@ -413,16 +471,19 @@ function App() {
     if (!schoolId) {
       setBranches([]);
       setUsers([]);
+      setAuditEvents([]);
       return;
     }
 
-    const [branchPayload, userPayload] = await Promise.all([
+    const [branchPayload, userPayload, auditPayload] = await Promise.all([
       saas(`/branches?school_id=${encodeURIComponent(schoolId)}&limit=100&offset=0`),
       iam(`/admin/users?school_id=${encodeURIComponent(schoolId)}&limit=100&offset=0`),
+      auditApi(`/events?school_id=${encodeURIComponent(schoolId)}&limit=100&offset=0`),
     ]);
 
     setBranches(branchPayload.data || []);
     setUsers(userPayload.data?.users || []);
+    setAuditEvents(auditPayload.data || []);
   }
 
   async function loadWorkspaceData(currentMe = me) {
@@ -447,7 +508,7 @@ function App() {
       studentsApi("/study-programs?limit=100&offset=0"),
       studentsApi("/students?limit=100&offset=0"),
       studentsApi("/groups?limit=100&offset=0"),
-      lessonsApi("/lessons?limit=100&offset=0"),
+      lessonsApi(`/lessons${buildLessonQuery(lessonFilters)}`),
       paymentsApi("/payments?limit=100&offset=0"),
       documentsApi("/documents?limit=100&offset=0"),
       documentsApi("/document-templates?limit=100&offset=0"),
@@ -536,6 +597,62 @@ function App() {
     return value ? `?${value}` : "";
   }
 
+  function buildLessonQuery(filters) {
+    const params = new URLSearchParams();
+    params.set("limit", "500");
+    params.set("offset", "0");
+    if (filters.student_id) params.set("student_id", filters.student_id);
+    if (filters.instructor_id) params.set("instructor_id", filters.instructor_id);
+    if (filters.car_id) params.set("car_id", filters.car_id);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.date_from) params.set("date_from", toIso(filters.date_from));
+    if (filters.date_to) params.set("date_to", toIso(filters.date_to));
+    params.set("sort_by", filters.sort_by || "start_at");
+    params.set("sort_order", filters.sort_order || "asc");
+    return `?${params.toString()}`;
+  }
+
+  async function loadLessons(nextFilters = lessonFilters) {
+    const payload = await lessonsApi(`/lessons${buildLessonQuery(nextFilters)}`);
+    setLessons(payload.data || []);
+  }
+
+  async function applyLessonFilters(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const nextFilters = {
+      student_id: String(form.get("student_id") || ""),
+      instructor_id: String(form.get("instructor_id") || ""),
+      car_id: String(form.get("car_id") || ""),
+      status: String(form.get("status") || ""),
+      date_from: String(form.get("date_from") || ""),
+      date_to: String(form.get("date_to") || ""),
+      sort_by: String(form.get("sort_by") || "start_at"),
+      sort_order: String(form.get("sort_order") || "asc"),
+    };
+    setLessonFilters(nextFilters);
+    await withBusy(async () => {
+      await loadLessons(nextFilters);
+    });
+  }
+
+  async function resetLessonFilters() {
+    const nextFilters = {
+      student_id: "",
+      instructor_id: "",
+      car_id: "",
+      status: "",
+      date_from: "",
+      date_to: "",
+      sort_by: "start_at",
+      sort_order: "asc",
+    };
+    setLessonFilters(nextFilters);
+    await withBusy(async () => {
+      await loadLessons(nextFilters);
+    });
+  }
+
   async function applyReportingFilters(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -571,11 +688,7 @@ function App() {
       setAvailabilityDrafts([]);
       return;
     }
-    const payload = await resources(
-      resourceType === "cars"
-        ? `/resources/cars/${resourceId}/availability`
-        : `/resources/instructors/${resourceId}/availability`
-    );
+    const payload = await resources(availabilityPath(resourceType, resourceId));
     const nextAvailability = payload.data || [];
     setAvailability(nextAvailability);
     setAvailabilityDrafts(
@@ -587,6 +700,12 @@ function App() {
         comment: item.comment || "",
       }))
     );
+  }
+
+  function availabilityPath(resourceType, resourceId) {
+    return resourceType === "cars"
+      ? `/resources/cars/${resourceId}/availability`
+      : `/resources/instructors/${resourceId}/availability`;
   }
 
   async function loadStudentBalance(studentId) {
@@ -720,7 +839,6 @@ function App() {
         method: "POST",
         body: JSON.stringify({
           branch_id: form.get("branch_id"),
-          instructor_id: normalizeNullable(form.get("instructor_id")),
           plate_number: form.get("plate_number"),
           brand: normalizeNullable(form.get("brand")),
           model: normalizeNullable(form.get("model")),
@@ -767,7 +885,6 @@ function App() {
       selectedResourceType === "cars"
         ? {
             branch_id: form.get("branch_id"),
-            instructor_id: normalizeNullable(form.get("instructor_id")),
             plate_number: form.get("plate_number"),
             brand: normalizeNullable(form.get("brand")),
             model: normalizeNullable(form.get("model")),
@@ -846,22 +963,17 @@ function App() {
 
   async function saveAvailability() {
     await withBusy(async () => {
-      await resources(
-        selectedResourceType === "cars"
-          ? `/resources/cars/${selectedResourceId}/availability`
-          : `/resources/instructors/${selectedResourceId}/availability`,
-        {
-          method: "PUT",
-          body: JSON.stringify({
-            windows: availabilityDrafts.map((item) => ({
-              type: item.type,
-              start_at: toIso(item.start_at),
-              end_at: toIso(item.end_at),
-              comment: normalizeNullable(item.comment),
-            })),
-          }),
-        }
-      );
+      await resources(availabilityPath(selectedResourceType, selectedResourceId), {
+        method: "PUT",
+        body: JSON.stringify({
+          windows: availabilityDrafts.map((item) => ({
+            type: item.type,
+            start_at: toIso(item.start_at),
+            end_at: toIso(item.end_at),
+            comment: normalizeNullable(item.comment),
+          })),
+        }),
+      });
       setToast({ type: "success", message: "Availability обновлён." });
       await loadAvailability(selectedResourceType, selectedResourceId);
     });
@@ -1170,23 +1282,46 @@ function App() {
   async function requestPlanning(event) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const periodStart = toIso(form.get("period_start"));
+    const periodEnd = toIso(form.get("period_end"));
+    const studentIds = parseMultiValue(form, "student_ids");
+    const groupIds = parseMultiValue(form, "group_ids");
+    const branchIds = parseMultiValue(form, "branch_ids");
+    const replaceStrategy = form.get("replace_strategy");
+    const requestId = normalizeNullable(form.get("request_id"));
     await withBusy(async () => {
       const payload = await lessonsApi("/planning/requests", {
         method: "POST",
         body: JSON.stringify({
-          period_start: toIso(form.get("period_start")),
-          period_end: toIso(form.get("period_end")),
-          student_ids: parseMultiValue(form, "student_ids"),
-          group_ids: parseMultiValue(form, "group_ids"),
-          branch_ids: parseMultiValue(form, "branch_ids"),
-          replace_strategy: form.get("replace_strategy"),
-          request_id: normalizeNullable(form.get("request_id")),
+          period_start: periodStart,
+          period_end: periodEnd,
+          student_ids: studentIds,
+          group_ids: groupIds,
+          branch_ids: branchIds,
+          replace_strategy: replaceStrategy,
+          request_id: requestId,
         }),
       });
+      const accepted = payload.data || {};
+      const acceptedRequestId = planningRequestId(accepted) || requestId || "";
+      setPlanningRequests((prev) => [
+        {
+          requestId: acceptedRequestId,
+          status: accepted.status || "queued",
+          periodStart,
+          periodEnd,
+          studentIds,
+          groupIds,
+          branchIds,
+          replaceStrategy,
+          queuedAt: new Date().toISOString(),
+        },
+        ...prev,
+      ].slice(0, 5));
       event.currentTarget.reset();
       setToast({
         type: "success",
-        message: `Planning request queued: ${payload.data?.request_id || "queued"}`,
+        message: `Planning request queued: ${acceptedRequestId || "queued"}`,
       });
     });
   }
@@ -1219,6 +1354,32 @@ function App() {
         comment: "",
       },
     ]);
+  }
+
+  function addAvailabilityPreset(weekdayNumbers, months = 1, startTimeValue = "08:00", endTimeValue = "20:00") {
+    const startDate = new Date(`${todayDateInput()}T00:00:00`);
+    const repeatUntil = new Date(startDate);
+    repeatUntil.setMonth(repeatUntil.getMonth() + months);
+    const selectedWeekdays = new Set(weekdayNumbers);
+    const nextWindows = [];
+    const cursor = new Date(startDate);
+
+    while (cursor < repeatUntil) {
+      if (selectedWeekdays.has(cursor.getDay())) {
+        const datePart = toLocalDateTimeInput(cursor).slice(0, 10);
+        nextWindows.push({
+          id: `preset-${Date.now()}-${nextWindows.length}`,
+          type: "working_hours",
+          start_at: `${datePart}T${startTimeValue}`,
+          end_at: `${datePart}T${endTimeValue}`,
+          comment: startTimeValue === "08:00" && endTimeValue === "20:00" ? "Стандартная доступность" : "",
+        });
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    setAvailabilityDrafts((current) => [...current, ...nextWindows]);
+    setToast({ type: "success", message: `Добавлено окон доступности: ${nextWindows.length}.` });
   }
 
   function updateAvailabilityWindow(id, field, value) {
@@ -1290,6 +1451,7 @@ function App() {
           <StatCard label="Школы" value={schools.length} hint="SaaS registry" />
           <StatCard label="Филиалы" value={branches.length} hint="Контекст выбранной школы" />
           <StatCard label="Пользователи" value={users.length} hint="IAM school-scoped users" />
+          <StatCard label="Audit" value={auditEvents.length} hint="Recent user actions" />
           <StatCard label="Режим" value="SaaS" hint="Полный доступ super_admin" />
         </section>
 
@@ -1520,6 +1682,39 @@ function App() {
                 </DataTable>
               </div>
             </div>
+
+            <div className="panel">
+              <div className="panel-head">
+                <div>
+                  <span className="eyebrow">Audit</span>
+                  <h3>User action log</h3>
+                </div>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  disabled={!selectedSchoolId}
+                  onClick={() => void withBusy(() => loadSuperAdminData(selectedSchoolId))}
+                >
+                  Refresh
+                </button>
+              </div>
+              <DataTable
+                headers={["Time", "Service", "Action", "Status", "User", "Duration", "Trace"]}
+                emptyMessage="No audit events yet."
+              >
+                {auditEvents.map((item) => (
+                  <tr key={item.id}>
+                    <td>{formatDateTime(item.created_at)}</td>
+                    <td><Pill>{item.service}</Pill></td>
+                    <td>{[item.method, item.path].filter(Boolean).join(" ")}</td>
+                    <td><Pill>{item.status_code}</Pill></td>
+                    <td>{item.user_id || item.user_role || "n/a"}</td>
+                    <td>{item.duration_ms} ms</td>
+                    <td>{shortId(item.trace_id || item.request_id)}</td>
+                  </tr>
+                ))}
+              </DataTable>
+            </div>
           </div>
         </section>
       </>
@@ -1616,14 +1811,6 @@ function App() {
             selectedResourceType === "cars" ? (
               <form className="toolbar-form wide" onSubmit={createCar}>
                 <BranchSelect branches={branches} name="branch_id" includePlaceholder />
-                <select name="instructor_id" defaultValue="">
-                  <option value="">Без инструктора</option>
-                  {instructors.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.full_name}
-                    </option>
-                  ))}
-                </select>
                 <input name="plate_number" placeholder="Госномер" required />
                 <input name="brand" placeholder="Марка" />
                 <input name="model" placeholder="Модель" />
@@ -1669,7 +1856,7 @@ function App() {
           <DataTable
             headers={
               selectedResourceType === "cars"
-                ? ["Plate", "Branch", "Instructor", "Transmission", "Status", "Availability", "Actions"]
+                ? ["Plate", "Branch", "Transmission", "Status", "Actions"]
                 : ["ФИО", "Филиал", "Email", "Телефон", "Статус", "Действие"]
             }
             emptyMessage="Ресурсы пока не загружены."
@@ -1687,10 +1874,8 @@ function App() {
                   <>
                     <td>{item.plate_number}</td>
                     <td>{branchNameById[item.branch_id] || item.branch_id}</td>
-                    <td>{item.instructor_id ? instructorNameById[item.instructor_id] || item.instructor_id : "—"}</td>
                     <td>{item.transmission || "-"}</td>
                     <td><Pill>{item.status}</Pill></td>
-                    <td><Pill>{item.availability_status}</Pill></td>
                     <td className="table-actions">
                       {canWriteWorkspace ? (
                         <button
@@ -1772,14 +1957,6 @@ function App() {
                     </select>
                     {selectedResourceType === "cars" ? (
                       <>
-                        <select name="instructor_id" defaultValue={selectedResource.instructor_id || ""}>
-                          <option value="">No instructor</option>
-                          {instructors.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.full_name}
-                            </option>
-                          ))}
-                        </select>
                         <input name="plate_number" defaultValue={selectedResource.plate_number || ""} placeholder="Plate" required />
                         <input name="brand" defaultValue={selectedResource.brand || ""} placeholder="Brand" />
                         <input name="model" defaultValue={selectedResource.model || ""} placeholder="Model" />
@@ -1834,10 +2011,28 @@ function App() {
 
             {selectedResource ? (
               <>
+                {selectedResourceType === "cars" && !availabilityDrafts.length ? (
+                  <div className="hint-box availability-default-hint">
+                    <strong>Дефолт для авто: 08:00-20:00</strong>
+                    <span>Если окна не заданы, planning использует ежедневную доступность авто с 08:00 до 20:00. Добавьте окна ниже, если для конкретного авто нужен другой график.</span>
+                  </div>
+                ) : null}
+
                 {canWriteWorkspace ? (
                   <form className="recurring-availability-form" onSubmit={addRecurringAvailability}>
                     <div className="form-section-title">
                       <strong>Повторяющееся расписание</strong>
+                    </div>
+                    <div className="availability-presets">
+                      <button type="button" className="ghost-button" onClick={() => addAvailabilityPreset([1, 2, 3, 4, 5], 1)}>
+                        Будни 08-20 на месяц
+                      </button>
+                      <button type="button" className="ghost-button" onClick={() => addAvailabilityPreset([0, 1, 2, 3, 4, 5, 6], 1)}>
+                        Каждый день 08-20 на месяц
+                      </button>
+                      <button type="button" className="ghost-button" onClick={() => addAvailabilityPreset([1, 2, 3, 4, 5], 3, "09:00", "18:00")}>
+                        Будни 09-18 на 3 месяца
+                      </button>
                     </div>
                     <div className="recurring-availability-grid">
                       <label>
@@ -1860,11 +2055,11 @@ function App() {
                       </label>
                       <label>
                         С
-                        <input name="start_time" type="time" defaultValue="09:00" required />
+                        <input name="start_time" type="time" defaultValue="08:00" required />
                       </label>
                       <label>
                         До
-                        <input name="end_time" type="time" defaultValue="18:00" required />
+                        <input name="end_time" type="time" defaultValue="20:00" required />
                       </label>
                       <label className="recurring-comment">
                         Комментарий
@@ -2230,6 +2425,182 @@ function App() {
           <div className="panel-head">
             <div>
               <span className="eyebrow">Lessons</span>
+              <h3>Фильтры и сортировка</h3>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => void resetLessonFilters()}>
+              Сбросить
+            </button>
+          </div>
+          <form key={JSON.stringify(lessonFilters)} className="toolbar-form wide" onSubmit={applyLessonFilters}>
+            <select name="student_id" defaultValue={lessonFilters.student_id}>
+              <option value="">Все ученики</option>
+              {students.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="car_id" defaultValue={lessonFilters.car_id}>
+              <option value="">Все авто</option>
+              {cars.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {carNameById[item.id]}
+                </option>
+              ))}
+            </select>
+            <select name="instructor_id" defaultValue={lessonFilters.instructor_id}>
+              <option value="">Все инструкторы</option>
+              {instructors.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="status" defaultValue={lessonFilters.status}>
+              <option value="">Все статусы</option>
+              {lessonStatusOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <input name="date_from" type="datetime-local" defaultValue={lessonFilters.date_from} />
+            <input name="date_to" type="datetime-local" defaultValue={lessonFilters.date_to} />
+            <select name="sort_by" defaultValue={lessonFilters.sort_by}>
+              {lessonSortOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  Сортировать по: {label}
+                </option>
+              ))}
+            </select>
+            <select name="sort_order" defaultValue={lessonFilters.sort_order}>
+              <option value="asc">По возрастанию</option>
+              <option value="desc">По убыванию</option>
+            </select>
+            <button className="primary-button" type="submit">
+              Применить
+            </button>
+          </form>
+        </div>
+
+        <div className="panel">
+          <div className="panel-head compact">
+            <div>
+              <span className="eyebrow">Calendar</span>
+              <h3>Занятия по дням</h3>
+            </div>
+            <span className="state-pill">{lessons.length} занятий</span>
+          </div>
+          {lessonsByDate.length ? (
+            <div className="lesson-calendar">
+              {lessonsByDate.map(([date, count]) => (
+                <div
+                  key={date}
+                  className="lesson-day"
+                  style={{ "--lesson-day-alpha": 0.12 + (count / maxLessonsPerDate) * 0.42 }}
+                >
+                  <span>{date.slice(5)}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState compact message="Нет занятий для выбранных фильтров." />
+          )}
+        </div>
+
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <span className="eyebrow">Lessons</span>
+              <h3>Фильтры и сортировка</h3>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => void resetLessonFilters()}>
+              Сбросить
+            </button>
+          </div>
+          <form key={JSON.stringify(lessonFilters)} className="toolbar-form wide" onSubmit={applyLessonFilters}>
+            <select name="student_id" defaultValue={lessonFilters.student_id}>
+              <option value="">Все ученики</option>
+              {students.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="car_id" defaultValue={lessonFilters.car_id}>
+              <option value="">Все авто</option>
+              {cars.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {carNameById[item.id]}
+                </option>
+              ))}
+            </select>
+            <select name="instructor_id" defaultValue={lessonFilters.instructor_id}>
+              <option value="">Все инструкторы</option>
+              {instructors.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="status" defaultValue={lessonFilters.status}>
+              <option value="">Все статусы</option>
+              {lessonStatusOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <input name="date_from" type="datetime-local" defaultValue={lessonFilters.date_from} />
+            <input name="date_to" type="datetime-local" defaultValue={lessonFilters.date_to} />
+            <select name="sort_by" defaultValue={lessonFilters.sort_by}>
+              {lessonSortOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  Сортировать по: {label}
+                </option>
+              ))}
+            </select>
+            <select name="sort_order" defaultValue={lessonFilters.sort_order}>
+              <option value="asc">По возрастанию</option>
+              <option value="desc">По убыванию</option>
+            </select>
+            <button className="primary-button" type="submit">
+              Применить
+            </button>
+          </form>
+        </div>
+
+        <div className="panel">
+          <div className="panel-head compact">
+            <div>
+              <span className="eyebrow">Calendar</span>
+              <h3>Занятия по дням</h3>
+            </div>
+            <span className="state-pill">{lessons.length} занятий</span>
+          </div>
+          {lessonsByDate.length ? (
+            <div className="lesson-calendar">
+              {lessonsByDate.map(([date, count]) => (
+                <div
+                  key={date}
+                  className="lesson-day"
+                  style={{ "--lesson-day-alpha": 0.12 + (count / maxLessonsPerDate) * 0.42 }}
+                >
+                  <span>{date.slice(5)}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState compact message="Нет занятий для выбранных фильтров." />
+          )}
+        </div>
+
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <span className="eyebrow">Lessons</span>
               <h3>Список занятий</h3>
             </div>
           </div>
@@ -2574,6 +2945,9 @@ function App() {
       students: students.filter((student) => student.group_id === group.id),
     }));
     const ungroupedPlanningStudents = students.filter((student) => !student.group_id);
+    const studentById = Object.fromEntries(students.map((student) => [student.id, student]));
+    const groupById = Object.fromEntries(groups.map((group) => [group.id, group]));
+    const branchById = Object.fromEntries(branches.map((branch) => [branch.id, branch]));
 
     return (
       <section className="workspace-grid planning-grid">
@@ -2656,14 +3030,14 @@ function App() {
                   </label>
                   <label>
                     Apply strategy
-                    <select name="replace_strategy" defaultValue="append">
+                    <select name="replace_strategy" defaultValue="replace_generated_only">
                       {planningReplaceStrategies.map((option) => (
                         <option key={option} value={option}>
                           {option}
                         </option>
                       ))}
                     </select>
-                    <span>append adds lessons, merge combines, replace_generated_only replaces only generated lessons.</span>
+                    <span>replace_generated_only rebuilds generated lessons, append keeps old lessons and adds new ones.</span>
                   </label>
                   <label>
                     Request ID
@@ -2683,6 +3057,84 @@ function App() {
         </div>
 
         <div className="stack-column">
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <span className="eyebrow">Build status</span>
+                <h3>Schedule construction</h3>
+                <p className="muted-text">Recent planning requests sent from this page.</p>
+              </div>
+            </div>
+            {planningRequests.length ? (
+              <div className="planning-result-list">
+                {planningRequests.map((request) => (
+                  <div key={`${request.requestId}-${request.queuedAt}`} className="planning-result-card">
+                    <div className="entity-card-head">
+                      <div>
+                        <strong>{request.requestId}</strong>
+                        <div className="entity-meta">
+                          Queued {formatDateTime(request.queuedAt)}
+                          {request.completedAt ? ` · Completed ${formatDateTime(request.completedAt)}` : ""}
+                        </div>
+                      </div>
+                      <Pill>{request.status}</Pill>
+                    </div>
+                    <div className="planning-result-grid">
+                      <Detail label="Period" value={`${formatDateTime(request.periodStart)} - ${formatDateTime(request.periodEnd)}`} />
+                      <Detail label="Apply mode" value={request.replaceStrategy} />
+                      <Detail label="Students" value={request.studentIds.length || "by groups"} />
+                      <Detail label="Groups" value={request.groupIds.length || "none"} />
+                      <Detail label="Branches" value={request.branchIds.length || "all"} />
+                    </div>
+                    {request.status === "completed" ? (
+                      <>
+                        <div className="planning-result-grid">
+                          <Detail label="Scheduled" value={formatCompactNumber(request.scheduledLessons)} />
+                          <Detail label="Applied" value={formatCompactNumber(request.appliedLessons)} />
+                          <Detail label="Conflicts" value={formatCompactNumber(request.conflicts)} />
+                          <Detail label="Unassigned" value={formatCompactNumber(request.unassignedStudents)} />
+                          <Detail label="Score" value={formatCompactNumber(request.score)} />
+                          <Detail label="Idle, h" value={formatCompactNumber((request.resourceIdleSeconds || 0) / 3600)} />
+                        </div>
+                        <div className="planning-ga-grid">
+                          <Detail label="GA population" value={formatCompactNumber(request.scoreBreakdown?.ga_population)} />
+                          <Detail label="GA generations" value={formatCompactNumber(request.scoreBreakdown?.ga_generations)} />
+                          <Detail label="GA max seconds" value={formatCompactNumber(request.scoreBreakdown?.ga_max_seconds)} />
+                          <Detail label="Valid options" value={formatCompactNumber(request.scoreBreakdown?.valid_options)} />
+                          <Detail label="Avg options/student" value={formatCompactNumber(request.scoreBreakdown?.avg_options_per_student)} />
+                          <Detail label="Total car slots" value={formatCompactNumber(request.scoreBreakdown?.total_car_slots)} />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="planning-result-note">
+                        Waiting for planning worker result. The request was accepted and remains queued until the worker applies the generated schedule.
+                      </div>
+                    )}
+                    <div className="planning-student-list">
+                      {request.studentIds.slice(0, 8).map((id) => (
+                        <span key={id} className="planning-student-chip">
+                          {studentById[id]?.full_name || id}
+                        </span>
+                      ))}
+                      {request.groupIds.slice(0, 8).map((id) => (
+                        <span key={id} className="planning-student-chip">
+                          {groupById[id]?.name || id}
+                        </span>
+                      ))}
+                      {request.branchIds.slice(0, 8).map((id) => (
+                        <span key={id} className="planning-student-chip">
+                          {branchById[id]?.name || id}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState compact message="No planning requests sent from this page yet." />
+            )}
+          </div>
+
           <div className="panel">
             <div className="panel-head">
               <div>
@@ -2863,12 +3315,14 @@ function App() {
                 <h3>Instructor Load</h3>
               </div>
             </div>
-            <DataTable headers={["Instructor", "Lessons", "Minutes"]} emptyMessage="No instructor load yet.">
+            <DataTable headers={["Instructor", "Lessons", "Minutes", "Available", "Idle"]} emptyMessage="No instructor load yet.">
               {reportingInstructorWorkload.map((item) => (
                 <tr key={item.instructor_id}>
                   <td>{item.full_name}</td>
                   <td>{item.lessons_total}</td>
                   <td>{item.total_minutes}</td>
+                  <td>{item.available_minutes}</td>
+                  <td>{item.idle_minutes}</td>
                 </tr>
               ))}
             </DataTable>
@@ -2881,13 +3335,15 @@ function App() {
                 <h3>Cars Load</h3>
               </div>
             </div>
-            <DataTable headers={["Car", "Plate", "Lessons", "Minutes"]} emptyMessage="No car utilization yet.">
+            <DataTable headers={["Car", "Plate", "Lessons", "Minutes", "Available", "Idle"]} emptyMessage="No car utilization yet.">
               {reportingCarsUtilization.map((item) => (
                 <tr key={item.car_id}>
                   <td>{item.display_name}</td>
                   <td>{item.plate_number}</td>
                   <td>{item.lessons_total}</td>
                   <td>{item.total_minutes}</td>
+                  <td>{item.available_minutes}</td>
+                  <td>{item.idle_minutes}</td>
                 </tr>
               ))}
             </DataTable>
@@ -2950,7 +3406,7 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <input name="manual_hours_completed" type="number" min="0" step="0.5" defaultValue="0" placeholder="Manual hours completed" />
+                <input name="manual_hours_completed" type="number" min="0" step="0.5" defaultValue="0" placeholder="Часы занятий пройденные" />
                 <button className="primary-button" type="submit">
                   Create
                 </button>
@@ -3022,7 +3478,7 @@ function App() {
                   min="0"
                   step="0.5"
                   defaultValue={editingStudent.manual_hours_completed ?? 0}
-                  placeholder="Manual hours completed"
+                  placeholder="Часы занятий пройденные"
                 />
                 <button className="primary-button" type="submit">
                   Save
@@ -3046,7 +3502,7 @@ function App() {
                 ))}
               </select>
             </div>
-            <DataTable headers={["Name", "Phone", "Branch", "Group", "Program", "Manual hours", "Status", "Actions"]} emptyMessage="No students yet.">
+            <DataTable headers={["Name", "Phone", "Branch", "Group", "Program", "Часы занятий пройденные", "Status", "Actions"]} emptyMessage="No students yet.">
               {filteredStudents.map((item) => (
                 <tr key={item.id}>
                   <td>{item.full_name}</td>
@@ -3381,6 +3837,94 @@ function App() {
             </form>
           </div>
         ) : null}
+
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <span className="eyebrow">Lessons</span>
+              <h3>Фильтры и сортировка</h3>
+            </div>
+            <button type="button" className="ghost-button" onClick={() => void resetLessonFilters()}>
+              Сбросить
+            </button>
+          </div>
+          <form key={JSON.stringify(lessonFilters)} className="toolbar-form wide" onSubmit={applyLessonFilters}>
+            <select name="student_id" defaultValue={lessonFilters.student_id}>
+              <option value="">Все ученики</option>
+              {students.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="car_id" defaultValue={lessonFilters.car_id}>
+              <option value="">Все авто</option>
+              {cars.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {carNameById[item.id]}
+                </option>
+              ))}
+            </select>
+            <select name="instructor_id" defaultValue={lessonFilters.instructor_id}>
+              <option value="">Все инструкторы</option>
+              {instructors.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.full_name}
+                </option>
+              ))}
+            </select>
+            <select name="status" defaultValue={lessonFilters.status}>
+              <option value="">Все статусы</option>
+              {lessonStatusOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <input name="date_from" type="datetime-local" defaultValue={lessonFilters.date_from} />
+            <input name="date_to" type="datetime-local" defaultValue={lessonFilters.date_to} />
+            <select name="sort_by" defaultValue={lessonFilters.sort_by}>
+              {lessonSortOptions.map(([value, label]) => (
+                <option key={value} value={value}>
+                  Сортировать по: {label}
+                </option>
+              ))}
+            </select>
+            <select name="sort_order" defaultValue={lessonFilters.sort_order}>
+              <option value="asc">По возрастанию</option>
+              <option value="desc">По убыванию</option>
+            </select>
+            <button className="primary-button" type="submit">
+              Применить
+            </button>
+          </form>
+        </div>
+
+        <div className="panel">
+          <div className="panel-head compact">
+            <div>
+              <span className="eyebrow">Calendar</span>
+              <h3>Занятия по дням</h3>
+            </div>
+            <span className="state-pill">{lessons.length} занятий</span>
+          </div>
+          {lessonsByDate.length ? (
+            <div className="lesson-calendar">
+              {lessonsByDate.map(([date, count]) => (
+                <div
+                  key={date}
+                  className="lesson-day"
+                  style={{ "--lesson-day-alpha": 0.12 + (count / maxLessonsPerDate) * 0.42 }}
+                >
+                  <span>{date.slice(5)}</span>
+                  <strong>{count}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState compact message="Нет занятий для выбранных фильтров." />
+          )}
+        </div>
 
         <div className="panel">
           <div className="panel-head">
@@ -3858,7 +4402,7 @@ function App() {
           <div className="brand-mark">M</div>
           <div>
             <span className="sidebar-label bright">Magistral</span>
-            <h1>Frontend Control Room</h1>
+            <h1>Magistral CRM</h1>
           </div>
         </div>
 
@@ -3892,7 +4436,7 @@ function App() {
         <header className="page-head">
           <div>
             <span className="eyebrow">{isSuperAdmin ? "Super Admin" : "School Workspace"}</span>
-            <h2>{isSuperAdmin ? "Управление платформой" : "Операционный кабинет школы"}</h2>
+            <h2>{isSuperAdmin ? "Управление платформой" : "Magistral CRM"}</h2>
           </div>
           <div className="head-badges">
             {busy ? <span className="busy-pill">Синхронизация...</span> : null}

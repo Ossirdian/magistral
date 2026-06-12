@@ -172,15 +172,13 @@
   }
 
   async function loadAvailability() {
-    if (!state.selectedResourceId) {
+    if (!state.selectedResourceId || state.selectedResourceType === "cars") {
       state.availability = [];
       state.drafts.availability = [];
       return;
     }
 
-    const path = state.selectedResourceType === "cars"
-      ? "/resources/cars/" + state.selectedResourceId + "/availability"
-      : "/resources/instructors/" + state.selectedResourceId + "/availability";
+    const path = "/resources/instructors/" + state.selectedResourceId + "/availability";
 
     const payload = await resources(path);
     state.availability = payload.data || [];
@@ -452,7 +450,7 @@
       detail("ID", item.id) +
       detail("Филиал", branchName(item.branch_id)) +
       detail("Статус", item.status) +
-      detail("Availability", item.availability_status) +
+      (state.selectedResourceType === "cars" ? "" : detail("Availability", item.availability_status)) +
       detail("Обновлено", formatDateTime(item.updated_at)) +
       detail("Создано", formatDateTime(item.created_at)) +
       "</div>";
@@ -460,6 +458,10 @@
 
   function renderAvailabilityEditor(item) {
     if (!item) return '<div class="empty-state">Сначала выберите ресурс.</div>';
+
+    if (state.selectedResourceType === "cars") {
+      return '<div class="availability-list"><div class="detail-card"><span>Default car availability</span><strong>09:00 - 20:00</strong></div></div>';
+    }
 
     const rows = state.drafts.availability.map(function (window) {
       return '<div class="availability-row"><select data-scope="availability" data-id="' + esc(window.id) + '" data-field="type">' + options(["working_hours", "vacation", "blackout"], window.type) + '</select><input data-scope="availability" data-id="' + esc(window.id) + '" data-field="start_at" type="datetime-local" value="' + escAttr(window.start_at) + '"><input data-scope="availability" data-id="' + esc(window.id) + '" data-field="end_at" type="datetime-local" value="' + escAttr(window.end_at) + '"><input data-scope="availability" data-id="' + esc(window.id) + '" data-field="comment" value="' + escAttr(window.comment || "") + '" placeholder="Комментарий"><button type="button" class="icon-button" data-action="remove-availability" data-id="' + esc(window.id) + '">Удалить</button></div>';
@@ -797,10 +799,8 @@
         });
       }));
 
-      if (availabilityDirty() && state.selectedResourceId) {
-        const path = state.selectedResourceType === "cars"
-          ? "/resources/cars/" + state.selectedResourceId + "/availability"
-          : "/resources/instructors/" + state.selectedResourceId + "/availability";
+      if (availabilityDirty() && state.selectedResourceId && state.selectedResourceType !== "cars") {
+        const path = "/resources/instructors/" + state.selectedResourceId + "/availability";
 
         await resources(path, {
           method: "PUT",

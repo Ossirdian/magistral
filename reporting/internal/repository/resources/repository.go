@@ -100,6 +100,86 @@ func (r *Repository) ListCars(ctx context.Context, schoolID string, branchID *st
 	return result, nil
 }
 
+func (r *Repository) InstructorAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error) {
+	return r.availabilityMinutes(ctx, availabilityQueryConfig{
+		resourceTable:     "instructors",
+		availabilityTable: "instructor_availability",
+		resourceIDColumn:  "instructor_id",
+	}, schoolID, filter)
+}
+
+func (r *Repository) CarAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error) {
+	return r.availabilityMinutes(ctx, availabilityQueryConfig{
+		resourceTable:     "cars",
+		availabilityTable: "car_availability",
+		resourceIDColumn:  "car_id",
+	}, schoolID, filter)
+}
+
+type availabilityQueryConfig struct {
+	resourceTable     string
+	availabilityTable string
+	resourceIDColumn  string
+}
+
+func (r *Repository) availabilityMinutes(ctx context.Context, cfg availabilityQueryConfig, schoolID string, filter model.ReportFilter) (map[string]int, error) {
+	var dateFrom any
+	if filter.DateFrom != nil {
+		dateFrom = *filter.DateFrom
+	}
+	var dateTo any
+	if filter.DateTo != nil {
+		dateTo = *filter.DateTo
+	}
+	args := []any{schoolID, dateFrom, dateTo}
+	where := []string{"res.school_id = $1", "res.deleted_at IS NULL"}
+	if filter.BranchID != nil && strings.TrimSpace(*filter.BranchID) != "" {
+		args = append(args, strings.TrimSpace(*filter.BranchID))
+		where = append(where, fmt.Sprintf("res.branch_id = $%d", len(args)))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT res.id::text,
+			GREATEST(0, COALESCE(SUM(
+				CASE
+					WHEN av.type = 'working_hours' THEN 1
+					WHEN av.type IN ('vacation', 'blackout') THEN -1
+					ELSE 0
+				END * EXTRACT(EPOCH FROM (
+					LEAST(av.end_at, COALESCE($3::timestamptz, av.end_at)) -
+					GREATEST(av.start_at, COALESCE($2::timestamptz, av.start_at))
+				)) / 60
+			), 0))::bigint AS available_minutes
+		FROM %s res
+		LEFT JOIN %s av ON av.%s = res.id
+			AND av.type IN ('working_hours', 'vacation', 'blackout')
+			AND ($2::timestamptz IS NULL OR av.end_at > $2::timestamptz)
+			AND ($3::timestamptz IS NULL OR av.start_at < $3::timestamptz)
+		WHERE %s
+		GROUP BY res.id
+	`, cfg.resourceTable, cfg.availabilityTable, cfg.resourceIDColumn, strings.Join(where, " AND "))
+
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]int)
+	for rows.Next() {
+		var id string
+		var minutes int
+		if err := rows.Scan(&id, &minutes); err != nil {
+			return nil, err
+		}
+		result[id] = minutes
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 func resourceWhere(schoolID string, branchID *string) (string, []any) {
 	clauses := []string{"school_id = $1", "deleted_at IS NULL"}
 	args := []any{schoolID}
@@ -115,4 +195,6 @@ var _ interface {
 	CountCars(context.Context, string, *string) (int, error)
 	ListInstructors(context.Context, string, *string) ([]model.InstructorRef, error)
 	ListCars(context.Context, string, *string) ([]model.CarRef, error)
+	InstructorAvailabilityMinutes(context.Context, string, model.ReportFilter) (map[string]int, error)
+	CarAvailabilityMinutes(context.Context, string, model.ReportFilter) (map[string]int, error)
 } = (*Repository)(nil)

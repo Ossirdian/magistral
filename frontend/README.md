@@ -1,5 +1,7 @@
 # Frontend
 
+SPA для ручной работы с Magistral. В разделе `Занятия` поддержаны фильтры по ученику, автомобилю, инструктору, статусу и периоду, серверная сортировка `start_at/student_id/instructor_id/car_id`, а также календарная сводка количества занятий по дням для текущего набора фильтров.
+
 React/Vite SPA for manual end-to-end verification of the platform flows.
 
 ## Purpose

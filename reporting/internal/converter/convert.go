@@ -72,10 +72,12 @@ func ConvertInstructorWorkload(items []model.InstructorWorkloadItem) ([]reportin
 			return nil, err
 		}
 		result = append(result, reportingv1.InstructorWorkloadItem{
-			InstructorID: id,
-			FullName:     item.FullName,
-			LessonsTotal: int64(item.LessonsTotal),
-			TotalMinutes: int64(item.TotalMinutes),
+			InstructorID:     id,
+			FullName:         item.FullName,
+			LessonsTotal:     int64(item.LessonsTotal),
+			TotalMinutes:     int64(item.TotalMinutes),
+			AvailableMinutes: int64(item.AvailableMinutes),
+			IdleMinutes:      int64(item.IdleMinutes),
 		})
 	}
 	return result, nil
@@ -89,11 +91,13 @@ func ConvertCarsUtilization(items []model.CarUtilizationItem) ([]reportingv1.Car
 			return nil, err
 		}
 		result = append(result, reportingv1.CarUtilizationItem{
-			CarID:        id,
-			PlateNumber:  item.PlateNumber,
-			DisplayName:  item.DisplayName,
-			LessonsTotal: int64(item.LessonsTotal),
-			TotalMinutes: int64(item.TotalMinutes),
+			CarID:            id,
+			PlateNumber:      item.PlateNumber,
+			DisplayName:      item.DisplayName,
+			LessonsTotal:     int64(item.LessonsTotal),
+			TotalMinutes:     int64(item.TotalMinutes),
+			AvailableMinutes: int64(item.AvailableMinutes),
+			IdleMinutes:      int64(item.IdleMinutes),
 		})
 	}
 	return result, nil

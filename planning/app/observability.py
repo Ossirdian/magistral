@@ -5,12 +5,15 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Iterator
 
+from opentelemetry import propagate
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from prometheus_client import Counter, Histogram, start_http_server
+
+from .otlp import otlp_http_endpoint
 
 
 REQUESTS_PROCESSED = Counter(
@@ -89,7 +92,7 @@ class Observability:
                     }
                 )
             )
-            provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint)))
+            provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_http_endpoint(otlp_endpoint))))
             trace.set_tracer_provider(provider)
             self._tracer = trace.get_tracer("planning")
 
@@ -100,13 +103,20 @@ class Observability:
         self._metrics_started = True
         self._logger.info("planning metrics server started", extra={"metrics_port": self._metrics_port})
 
-    def request_span(self, request_id: str) -> Iterator[trace.Span]:
+    def request_span(self, request_id: str, trace_context: dict[str, str] | None = None) -> Iterator[trace.Span]:
+        context = propagate.extract(trace_context or {})
         return self._tracer.start_as_current_span(
             "planning.request",
+            context=context,
             attributes={
                 "planning.request_id": request_id,
             },
         )
+
+    def inject_trace_context(self) -> dict[str, str]:
+        carrier: dict[str, str] = {}
+        propagate.inject(carrier)
+        return carrier
 
     def measure(self) -> "_Timer":
         return _Timer()

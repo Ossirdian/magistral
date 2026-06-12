@@ -26,6 +26,8 @@ type TracingConfig interface {
 type PlanningConfig interface {
 	KafkaBootstrapServers() []string
 	KafkaRequestTopic() string
+	KafkaResultTopic() string
+	KafkaResultGroupID() string
 }
 
 type Config interface {

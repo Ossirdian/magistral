@@ -41,14 +41,24 @@ func (s *CarUtilizationItem) encodeFields(e *jx.Encoder) {
 		e.FieldStart("total_minutes")
 		e.Int64(s.TotalMinutes)
 	}
+	{
+		e.FieldStart("available_minutes")
+		e.Int64(s.AvailableMinutes)
+	}
+	{
+		e.FieldStart("idle_minutes")
+		e.Int64(s.IdleMinutes)
+	}
 }
 
-var jsonFieldsNameOfCarUtilizationItem = [5]string{
+var jsonFieldsNameOfCarUtilizationItem = [7]string{
 	0: "car_id",
 	1: "plate_number",
 	2: "display_name",
 	3: "lessons_total",
 	4: "total_minutes",
+	5: "available_minutes",
+	6: "idle_minutes",
 }
 
 // Decode decodes CarUtilizationItem from json.
@@ -120,6 +130,30 @@ func (s *CarUtilizationItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"total_minutes\"")
 			}
+		case "available_minutes":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int64()
+				s.AvailableMinutes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"available_minutes\"")
+			}
+		case "idle_minutes":
+			requiredBitSet[0] |= 1 << 6
+			if err := func() error {
+				v, err := d.Int64()
+				s.IdleMinutes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idle_minutes\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -130,7 +164,7 @@ func (s *CarUtilizationItem) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00011111,
+		0b01111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.
@@ -1496,13 +1530,23 @@ func (s *InstructorWorkloadItem) encodeFields(e *jx.Encoder) {
 		e.FieldStart("total_minutes")
 		e.Int64(s.TotalMinutes)
 	}
+	{
+		e.FieldStart("available_minutes")
+		e.Int64(s.AvailableMinutes)
+	}
+	{
+		e.FieldStart("idle_minutes")
+		e.Int64(s.IdleMinutes)
+	}
 }
 
-var jsonFieldsNameOfInstructorWorkloadItem = [4]string{
+var jsonFieldsNameOfInstructorWorkloadItem = [6]string{
 	0: "instructor_id",
 	1: "full_name",
 	2: "lessons_total",
 	3: "total_minutes",
+	4: "available_minutes",
+	5: "idle_minutes",
 }
 
 // Decode decodes InstructorWorkloadItem from json.
@@ -1562,6 +1606,30 @@ func (s *InstructorWorkloadItem) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"total_minutes\"")
 			}
+		case "available_minutes":
+			requiredBitSet[0] |= 1 << 4
+			if err := func() error {
+				v, err := d.Int64()
+				s.AvailableMinutes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"available_minutes\"")
+			}
+		case "idle_minutes":
+			requiredBitSet[0] |= 1 << 5
+			if err := func() error {
+				v, err := d.Int64()
+				s.IdleMinutes = int64(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"idle_minutes\"")
+			}
 		default:
 			return d.Skip()
 		}
@@ -1572,7 +1640,7 @@ func (s *InstructorWorkloadItem) Decode(d *jx.Decoder) error {
 	// Validate required fields.
 	var failures []validate.FieldError
 	for i, mask := range [1]uint8{
-		0b00001111,
+		0b00111111,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

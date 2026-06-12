@@ -1,0 +1,29 @@
+services:
+  app-audit:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/audit/Dockerfile
+    image: ${APP_IMAGE_NAME}
+    container_name: app-audit
+    env_file:
+      - .env
+    expose:
+      - "${HTTP_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:${HTTP_PORT}/healthz > /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "app-audit"
+    restart: unless-stopped
+    networks:
+      - magistral-microservices
+
+networks:
+  magistral-microservices:
+    name: magistral-microservices
+    external: true

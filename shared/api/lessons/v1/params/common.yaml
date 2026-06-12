@@ -61,6 +61,30 @@ DateTo:
     type: string
     format: date-time
 
+LessonSortBy:
+  name: sort_by
+  in: query
+  required: false
+  schema:
+    type: string
+    enum:
+      - start_at
+      - student_id
+      - instructor_id
+      - car_id
+    default: start_at
+
+SortOrder:
+  name: sort_order
+  in: query
+  required: false
+  schema:
+    type: string
+    enum:
+      - asc
+      - desc
+    default: asc
+
 Limit:
   name: limit
   in: query
@@ -68,7 +92,7 @@ Limit:
   schema:
     type: integer
     minimum: 1
-    maximum: 100
+    maximum: 500
     default: 50
 
 Offset:

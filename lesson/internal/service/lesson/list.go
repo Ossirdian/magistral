@@ -15,6 +15,12 @@ func (s *Service) List(ctx context.Context, schoolID string, filter model.Lesson
 	if filter.Status != nil && !isValidStatus(*filter.Status) {
 		return nil, model.PageMeta{}, svc.ErrInvalidArgument
 	}
+	if filter.SortBy != "" && !isValidSortBy(filter.SortBy) {
+		return nil, model.PageMeta{}, svc.ErrInvalidArgument
+	}
+	if filter.SortOrder != "" && !isValidSortOrder(filter.SortOrder) {
+		return nil, model.PageMeta{}, svc.ErrInvalidArgument
+	}
 	if filter.DateFrom != nil && filter.DateTo != nil && filter.DateFrom.After(*filter.DateTo) {
 		return nil, model.PageMeta{}, svc.ErrInvalidArgument
 	}
@@ -37,4 +43,22 @@ func (s *Service) List(ctx context.Context, schoolID string, filter model.Lesson
 
 	filter = normalizeFilter(filter)
 	return s.repo.List(ctx, schoolID, filter)
+}
+
+func isValidSortBy(value model.LessonSortBy) bool {
+	switch value {
+	case model.LessonSortByStartAt, model.LessonSortByStudentID, model.LessonSortByInstructorID, model.LessonSortByCarID:
+		return true
+	default:
+		return false
+	}
+}
+
+func isValidSortOrder(value model.SortOrder) bool {
+	switch value {
+	case model.SortOrderAsc, model.SortOrderDesc:
+		return true
+	default:
+		return false
+	}
 }

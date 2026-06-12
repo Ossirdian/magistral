@@ -147,7 +147,7 @@ func ConvertCarAssignmentResult(item model.CarAssignmentResult) (resourcesv1.Car
 func ConvertCarCreateRequest(req *resourcesv1.CarCreateRequest) model.CarCreate {
 	return model.CarCreate{
 		BranchID:     req.BranchID.String(),
-		InstructorID: optNilUUIDToPtr(req.InstructorID),
+		InstructorID: nil,
 		PlateNumber:  req.PlateNumber,
 		Brand:        optNilStringToPtr(req.Brand),
 		Model:        optNilStringToPtr(req.Model),
@@ -160,7 +160,6 @@ func ConvertCarCreateRequest(req *resourcesv1.CarCreateRequest) model.CarCreate 
 func ConvertCarPatchRequest(req *resourcesv1.CarPatchRequest) model.CarPatch {
 	return model.CarPatch{
 		BranchID:     optUUIDToPtr(req.BranchID),
-		InstructorID: stringFieldFromOptNilUUID(req.InstructorID),
 		PlateNumber:  optStringToPtr(req.PlateNumber),
 		Brand:        stringFieldFromOptNilString(req.Brand),
 		Model:        stringFieldFromOptNilString(req.Model),

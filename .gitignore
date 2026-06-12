@@ -32,8 +32,20 @@ node_modules
 
 # Local temp/cache directories
 /.cache/
+/.gocache/
+/.pytest_cache/
 /tmp-buf/
 /tmp-buf-cache/
 /tmp-gocache/
 /tmp-gomodcache/
 /tmp-gopath/
+**/.gocache/
+**/.pytest_cache/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Generated local reports/datasets
+/planning/generated/
+/planning/ga_tests/
+/pycache-restore.zip

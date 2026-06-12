@@ -17,6 +17,7 @@ import (
 	documentrepo "github.com/ossirdian/magistral/document/internal/repository/document"
 	documentservice "github.com/ossirdian/magistral/document/internal/service/document"
 	localstorage "github.com/ossirdian/magistral/document/internal/storage/local"
+	auditpkg "github.com/ossirdian/magistral/platform/pkg/audit"
 	"github.com/ossirdian/magistral/platform/pkg/closer"
 	"github.com/ossirdian/magistral/platform/pkg/httpx"
 	"github.com/ossirdian/magistral/platform/pkg/logger"
@@ -95,7 +96,7 @@ func New(ctx context.Context, cfg *env.Config) (*App, error) {
 
 	server := &http.Server{
 		Addr:              cfg.HTTP().Addr(),
-		Handler:           ptracing.HTTPMiddleware("document-http", pmetrics.HTTPMiddleware(httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins()))),
+		Handler:           ptracing.HTTPMiddleware("document-http", pmetrics.HTTPMiddleware(auditpkg.Middleware("document", httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins())))),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

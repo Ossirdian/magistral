@@ -295,6 +295,21 @@ func (s *LessonResponse) Validate() error {
 	return nil
 }
 
+func (s LessonSortBy) Validate() error {
+	switch s {
+	case "start_at":
+		return nil
+	case "student_id":
+		return nil
+	case "instructor_id":
+		return nil
+	case "car_id":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
+}
+
 func (s LessonStatus) Validate() error {
 	switch s {
 	case "scheduled":
@@ -344,4 +359,15 @@ func (s *PlanningRequestCreateRequest) Validate() error {
 		return &validate.Error{Fields: failures}
 	}
 	return nil
+}
+
+func (s SortOrder) Validate() error {
+	switch s {
+	case "asc":
+		return nil
+	case "desc":
+		return nil
+	default:
+		return errors.Errorf("invalid value: %v", s)
+	}
 }

@@ -11,6 +11,8 @@ get:
     - $ref: ../params/common.yaml#/LessonStatus
     - $ref: ../params/common.yaml#/DateFrom
     - $ref: ../params/common.yaml#/DateTo
+    - $ref: ../params/common.yaml#/LessonSortBy
+    - $ref: ../params/common.yaml#/SortOrder
     - $ref: ../params/common.yaml#/Limit
     - $ref: ../params/common.yaml#/Offset
   responses:

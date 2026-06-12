@@ -28,6 +28,8 @@ type ResourcesReader interface {
 	CountCars(ctx context.Context, schoolID string, branchID *string) (int, error)
 	ListInstructors(ctx context.Context, schoolID string, branchID *string) ([]model.InstructorRef, error)
 	ListCars(ctx context.Context, schoolID string, branchID *string) ([]model.CarRef, error)
+	InstructorAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error)
+	CarAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error)
 }
 
 type PaymentReader interface {
@@ -130,6 +132,10 @@ func (s *Service) InstructorWorkload(ctx context.Context, schoolID string, filte
 	if err != nil {
 		return nil, err
 	}
+	availabilityByID, err := s.resources.InstructorAvailabilityMinutes(ctx, schoolID, filter)
+	if err != nil {
+		return nil, err
+	}
 
 	loadByID := make(map[string]model.EntityLoad, len(loads))
 	for _, item := range loads {
@@ -140,11 +146,14 @@ func (s *Service) InstructorWorkload(ctx context.Context, schoolID string, filte
 	seen := make(map[string]struct{}, len(refs))
 	for _, ref := range refs {
 		load := loadByID[ref.ID]
+		available := availabilityByID[ref.ID]
 		result = append(result, model.InstructorWorkloadItem{
-			InstructorID: ref.ID,
-			FullName:     ref.FullName,
-			LessonsTotal: load.LessonsTotal,
-			TotalMinutes: load.TotalMinutes,
+			InstructorID:     ref.ID,
+			FullName:         ref.FullName,
+			LessonsTotal:     load.LessonsTotal,
+			TotalMinutes:     load.TotalMinutes,
+			AvailableMinutes: available,
+			IdleMinutes:      idleMinutes(available, load.TotalMinutes),
 		})
 		seen[ref.ID] = struct{}{}
 	}
@@ -152,11 +161,14 @@ func (s *Service) InstructorWorkload(ctx context.Context, schoolID string, filte
 		if _, ok := seen[load.ID]; ok {
 			continue
 		}
+		available := availabilityByID[load.ID]
 		result = append(result, model.InstructorWorkloadItem{
-			InstructorID: load.ID,
-			FullName:     load.ID,
-			LessonsTotal: load.LessonsTotal,
-			TotalMinutes: load.TotalMinutes,
+			InstructorID:     load.ID,
+			FullName:         load.ID,
+			LessonsTotal:     load.LessonsTotal,
+			TotalMinutes:     load.TotalMinutes,
+			AvailableMinutes: available,
+			IdleMinutes:      idleMinutes(available, load.TotalMinutes),
 		})
 	}
 
@@ -186,6 +198,10 @@ func (s *Service) CarsUtilization(ctx context.Context, schoolID string, filter m
 	if err != nil {
 		return nil, err
 	}
+	availabilityByID, err := s.resources.CarAvailabilityMinutes(ctx, schoolID, filter)
+	if err != nil {
+		return nil, err
+	}
 
 	loadByID := make(map[string]model.EntityLoad, len(loads))
 	for _, item := range loads {
@@ -196,12 +212,15 @@ func (s *Service) CarsUtilization(ctx context.Context, schoolID string, filter m
 	seen := make(map[string]struct{}, len(refs))
 	for _, ref := range refs {
 		load := loadByID[ref.ID]
+		available := availabilityByID[ref.ID]
 		result = append(result, model.CarUtilizationItem{
-			CarID:        ref.ID,
-			PlateNumber:  ref.PlateNumber,
-			DisplayName:  ref.DisplayName,
-			LessonsTotal: load.LessonsTotal,
-			TotalMinutes: load.TotalMinutes,
+			CarID:            ref.ID,
+			PlateNumber:      ref.PlateNumber,
+			DisplayName:      ref.DisplayName,
+			LessonsTotal:     load.LessonsTotal,
+			TotalMinutes:     load.TotalMinutes,
+			AvailableMinutes: available,
+			IdleMinutes:      idleMinutes(available, load.TotalMinutes),
 		})
 		seen[ref.ID] = struct{}{}
 	}
@@ -209,12 +228,15 @@ func (s *Service) CarsUtilization(ctx context.Context, schoolID string, filter m
 		if _, ok := seen[load.ID]; ok {
 			continue
 		}
+		available := availabilityByID[load.ID]
 		result = append(result, model.CarUtilizationItem{
-			CarID:        load.ID,
-			PlateNumber:  load.ID,
-			DisplayName:  load.ID,
-			LessonsTotal: load.LessonsTotal,
-			TotalMinutes: load.TotalMinutes,
+			CarID:            load.ID,
+			PlateNumber:      load.ID,
+			DisplayName:      load.ID,
+			LessonsTotal:     load.LessonsTotal,
+			TotalMinutes:     load.TotalMinutes,
+			AvailableMinutes: available,
+			IdleMinutes:      idleMinutes(available, load.TotalMinutes),
 		})
 	}
 
@@ -301,6 +323,13 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func idleMinutes(available, used int) int {
+	if available <= used {
+		return 0
+	}
+	return available - used
 }
 
 var _ svc.ReportingService = (*Service)(nil)

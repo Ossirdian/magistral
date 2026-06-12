@@ -931,6 +931,14 @@ func (s *Server) handleListLessonsRequest(args [0]string, argsEscaped bool, w ht
 					In:   "query",
 				}: params.DateTo,
 				{
+					Name: "sort_by",
+					In:   "query",
+				}: params.SortBy,
+				{
+					Name: "sort_order",
+					In:   "query",
+				}: params.SortOrder,
+				{
 					Name: "limit",
 					In:   "query",
 				}: params.Limit,

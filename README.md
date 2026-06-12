@@ -1,51 +1,54 @@
 # Magistral
 
-Монорепозиторий платформы автошколы с HTTP ingress через `envoy`, отдельным frontend и набором backend-сервисов на Go и Python.
+`Magistral` - монорепозиторий CRM-платформы для автошколы. В проекте есть единый HTTP ingress через `envoy`, SPA-интерфейс `Magistral CRM`, набор Go-сервисов, Python worker для планирования и общие OpenAPI/proto контракты.
 
-## Состав проекта
+## Состав Проекта
 
-- `frontend` — SPA для ручной работы с системой
-- `envoy` — единая внешняя HTTP точка входа
-- `iam` — аутентификация, пользователи, роли, gRPC authz для Envoy
-- `saas` — школы и филиалы
-- `resources` — инструкторы, машины, доступность
-- `student` — ученики и группы
-- `lesson` — расписание, конфликты, batch apply для planning
-- `payment` — платежи, договоры, балансы
-- `document` — документы учеников и шаблоны
-- `reporting` — агрегированные read-only отчёты
-- `planning` — Python worker для генерации расписания через Kafka
-- `shared` — OpenAPI, proto и сгенерированный код
-- `platform` — общая инфраструктурная библиотека
+- `frontend` - React/Vite SPA `Magistral CRM`.
+- `envoy` - единая внешняя HTTP-точка входа.
+- `iam` - аутентификация, пользователи, роли, gRPC authz для Envoy.
+- `saas` - школы и филиалы.
+- `resources` - инструкторы, автомобили, окна доступности.
+- `student` - ученики, группы, программы обучения.
+- `lesson` - занятия, расписание, batch apply результата planning.
+- `payment` - платежи, договоры, балансы.
+- `document` - документы учеников и шаблоны.
+- `reporting` - агрегированные read-only отчеты.
+- `planning` - Python worker для генерации расписания через Kafka, greedy + GA.
+- `audit` - журнал HTTP-действий пользователей.
+- `shared` - OpenAPI, proto и сгенерированные клиенты/серверные интерфейсы.
+- `platform` - общая инфраструктура: логирование, tracing, audit middleware, HTTP helpers.
 
-## Актуальная архитектура
+## Архитектура
 
-- Внешний HTTP трафик идёт только через `envoy`.
-- `envoy` делает `ext_authz` в `iam` по gRPC `envoy.service.auth.v3.Authorization/Check`.
-- После успешной проверки `envoy` прокидывает trusted headers `x-user-*` в backend HTTP сервисы.
-- HTTP сервисы не ходят в `iam` за авторизацией напрямую и доверяют только заголовкам от `envoy`.
-- Внутренние сервисы общаются между собой через gRPC там, где уже есть runtime-контракт.
-- `payment` и `document` используют internal gRPC `student` для проверки принадлежности `student_id`.
-- `planning` работает асинхронно через Kafka и применяет результат в `lesson` через batch endpoint.
-- `reporting` в текущем MVP строит агрегаты прямым чтением storage `student`, `lesson`, `resources`, `payment`.
+- Внешний HTTP-трафик идет через `envoy`.
+- `envoy` вызывает `iam` по gRPC `envoy.service.auth.v3.Authorization/Check`.
+- После успешной авторизации `envoy` прокидывает trusted headers `x-user-*` и `x-school-id`.
+- Backend HTTP-сервисы доверяют только trusted headers от `envoy`.
+- `payment` и `document` проверяют студентов через internal gRPC `student`.
+- `reporting` в текущей версии строит агрегаты прямым чтением storage сервисов.
+- `planning` работает асинхронно через Kafka.
+- `lesson` принимает planning request, публикует его в Kafka, применяет результат planning и хранит in-memory статус запроса.
 
 ## Source Of Truth
 
-- `iam` — users, credentials, token validation
-- `saas` — schools, branches
-- `resources` — instructors, cars, availability
-- `student` — students, groups
-- `lesson` — lessons, schedule conflicts
-- `payment` — payments, contracts, balances
-- `document` — documents, document templates
-- `reporting` — только read model, не источник истины
-- `planning` — только генерация, не источник истины
+- `iam` - пользователи, credentials, роли, token validation.
+- `saas` - школы и филиалы.
+- `resources` - инструкторы, автомобили, availability.
+- `student` - ученики, группы, программы обучения.
+- `lesson` - занятия и конфликты расписания.
+- `payment` - платежи, договоры, балансы.
+- `document` - документы и шаблоны.
+- `audit` - журнал действий.
+- `reporting` - read model, не источник истины.
+- `planning` - генератор расписания, не источник истины.
 
-## HTTP маршруты через Envoy
+## HTTP Маршруты Через Envoy
 
 - `/` -> `frontend`
 - `/api/iam/*` -> `iam`
 - `/api/saas/*` -> `saas`
+- `/api/audit/*` -> `audit`
 - `/api/resources/*` -> `resources`
 - `/api/students/*` -> `student`
 - `/api/lessons/*` -> `lesson`
@@ -53,71 +56,108 @@
 - `/api/documents/*` -> `document`
 - `/api/reporting/*` -> `reporting`
 
-## Сервисы и ответственность
+Отдельный compatibility route:
 
-### `iam`
+- `/api/students/planning/requests` -> `lesson /planning/requests`
 
-- login, refresh, `me`
-- управление school-scoped users
-- gRPC authz для `envoy`
+## Основные Возможности
 
-### `saas`
+### Magistral CRM
 
-- CRUD школ
-- CRUD филиалов
-- bootstrap школы с первым admin
+Frontend работает в двух режимах:
 
-### `resources`
+- `super_admin` - школы, филиалы, пользователи IAM, audit.
+- `admin|owner|instructor` - рабочее место школы.
 
-- CRUD инструкторов
-- CRUD автомобилей
-- availability
-- assignment `car -> instructor`
+В рабочем месте доступны:
 
-### `student`
+- ресурсы: автомобили, инструкторы, availability-окна;
+- ученики, группы и программы обучения;
+- занятия с фильтрами и сортировкой;
+- платежи и баланс ученика;
+- документы и шаблоны;
+- reporting;
+- planning request с отображением статуса `queued -> completed`.
 
-- CRUD учеников
-- CRUD групп
-- internal gRPC `GetStudent`
+### Resources
 
-Важно:
+`resources` управляет инструкторами, автомобилями и окнами доступности.
 
-- оркестрация planning убрана из `student`
-- `student` больше не владеет расписанием
+Важные правила:
 
-### `lesson`
+- planning использует availability автомобилей из `resources`;
+- если у авто нет окон availability, planning считает авто доступным каждый день `08:00-20:00`;
+- привязка `car -> instructor` оставлена как legacy API, но основной UI и planning ее не используют;
+- инструктор для занятия выбирается динамически по availability.
 
-- CRUD занятий
-- проверка конфликтов по `student_id`, `instructor_id`, `car_id`
-- фильтрация расписания
-- `POST /internal/v1/lessons/batch` для результата planning
+### Lesson
 
-### `payment`
+`lesson` отвечает за занятия и применение результата planning.
 
-- CRUD платежей
-- договоры учеников
-- расчёт остатка
+Поддержано:
 
-### `document`
+- CRUD занятий;
+- проверка конфликтов по студенту, инструктору и автомобилю;
+- фильтрация по ученику, инструктору, автомобилю, статусу, периоду;
+- сортировка `sort_by=start_at|student_id|instructor_id|car_id`;
+- порядок `sort_order=asc|desc`;
+- лимит списка занятий до `500`;
+- календарная сводка занятий по дням во frontend;
+- `POST /planning/requests` для постановки задачи planning;
+- `GET /planning/requests/{request_id}` для статуса planning request.
 
-- документы учеников
-- шаблоны документов
-- генерация документов
+Статус planning request хранится in-memory в `lesson`, поэтому после рестарта сервиса история статусов пропадает.
 
-### `reporting`
+### Planning
 
-- dashboard
-- students report
-- lessons report
-- finance report
-- instructor workload
-- car utilization
+`planning` строит индивидуальные занятия через гибрид:
 
-### `planning`
+```text
+greedy seed -> ограниченный набор LessonOption -> GA
+```
 
-- чтение задач из Kafka
-- генерация индивидуальных занятий
-- отправка результата в `lesson`
+Основные правила:
+
+- занятие длится `90` минут;
+- студент, инструктор и автомобиль не могут пересекаться по времени;
+- трансмиссия студента должна совпадать с трансмиссией авто;
+- availability инструкторов и авто является hard constraint;
+- старые generated-занятия игнорируются в режимах `merge` и `replace_generated_only`;
+- привязка автомобиля к инструктору не используется.
+
+Demand по студентам:
+
+- сначала используются `remaining_lessons_required_max`, `remaining_lessons`, `target_lessons`;
+- если их нет, fallback идет через `remaining_hours / 1.5`;
+- fallback ограничивается программой: `manual = 28`, `automatic = 27`.
+
+В `score_breakdown` попадают:
+
+- fitness score и его компоненты;
+- `valid_options`;
+- `avg_options_per_student`;
+- `students_with_valid_options`;
+- `total_car_slots`;
+- `ga_population`;
+- `ga_generations`;
+- `ga_max_seconds`;
+- статистика существующих занятий.
+
+Подробнее:
+
+- [planning/README.md](./planning/README.md)
+- [planning/GA.md](./planning/GA.md)
+
+### Reporting
+
+`reporting` отдает агрегаты:
+
+- dashboard;
+- отчет по ученикам;
+- отчет по занятиям;
+- финансы;
+- загрузка инструкторов;
+- utilization автомобилей.
 
 ## Контракты
 
@@ -131,7 +171,7 @@ OpenAPI:
 - `shared/api/documents/v1/documents.openapi.yaml`
 - `shared/api/reporting/v1/reporting.openapi.yaml`
 
-Generated packages:
+Сгенерированные пакеты:
 
 - `shared/pkg/resources/v1`
 - `shared/pkg/saasadmin/v1`
@@ -146,7 +186,13 @@ Proto:
 - `shared/proto/iam/v1`
 - `shared/proto/student/v1`
 
-## Быстрый старт
+После изменения контрактов:
+
+```powershell
+task gen
+```
+
+## Быстрый Старт
 
 1. Сгенерировать env-файлы:
 
@@ -154,13 +200,13 @@ Proto:
 task env:generate
 ```
 
-2. При необходимости пересгенерировать код из контрактов:
+2. При необходимости пересгенерировать контракты:
 
 ```powershell
 task gen
 ```
 
-3. Поднять всё окружение:
+3. Поднять окружение:
 
 ```powershell
 task docker:up:all
@@ -178,27 +224,39 @@ http://localhost:3000
 task docker:down:all
 ```
 
-## Docker и compose
+## Логин По Умолчанию
 
-Сборка образов идёт через `docker buildx bake`.
+Super admin создается из env:
+
+- `IAM_BOOTSTRAP_SUPER_ADMIN_EMAIL`
+- `IAM_BOOTSTRAP_SUPER_ADMIN_PASSWORD`
+
+Значения по умолчанию:
+
+```text
+superadmin@example.com
+Passw0rd!
+```
+
+## Docker И Compose
+
+Сборка образов идет через `docker buildx bake`.
 
 Основные команды:
 
 ```powershell
-task docker:build:lesson
-task docker:build:student
-task docker:build:payment
-task docker:build:document
-task docker:build:reporting
 task docker:build:all
+task docker:up:all
+task docker:down:all
 ```
 
-Запуск сервисов по отдельности:
+Запуск отдельных сервисов:
 
 ```powershell
 task docker:up:core
 task docker:up:iam
 task docker:up:saas
+task docker:up:audit
 task docker:up:resources
 task docker:up:student
 task docker:up:lesson
@@ -210,16 +268,57 @@ task docker:up:frontend
 task docker:up:envoy
 ```
 
+После изменений во frontend или backend-коде пересоберите нужные контейнеры:
+
+```powershell
+docker compose up -d --build app-frontend app-lesson app-planning
+```
+
+Если имена сервисов отличаются:
+
+```powershell
+docker compose ps
+```
+
+## Очистка Локальных Артефактов
+
+В `.gitignore` и `.dockerignore` исключены локальные cache/temp директории:
+
+- `.gocache`;
+- `.pytest_cache`;
+- `__pycache__`;
+- `planning/generated`;
+- `planning/ga_tests`;
+- `tmp-gomodcache`;
+- `tmp-gocache`.
+
+Если cache-файлы уже были добавлены в git, их нужно снять с индекса:
+
+```powershell
+git ls-files | Select-String -Pattern "(__pycache__|\.pyc$)" | ForEach-Object { git rm --cached -- $_.Line }
+```
+
+Очистка Docker:
+
+```powershell
+docker system df
+docker builder prune
+docker system prune -a
+```
+
+`docker volume prune` используйте осторожно: он может удалить локальные данные Postgres/Kafka.
+
 ## Observability
 
-В проекте подключены:
+Подключены:
 
-- `Prometheus`
-- `Grafana`
-- `Jaeger`
-- `ELK` для логов
+- Prometheus;
+- Grafana;
+- Jaeger;
+- ELK/Kibana;
+- audit middleware.
 
-Метрики снимаются с:
+Метрики:
 
 - `app-iam:8082/metrics`
 - `app-saas:8081/metrics`
@@ -234,13 +333,13 @@ task docker:up:envoy
 
 UI:
 
-- `Envoy / frontend entrypoint`: `http://localhost:3000`
-- `Grafana`: `http://localhost:3001`
-- `Prometheus`: `http://localhost:9090`
-- `Kibana`: `http://localhost:5601`
-- `Jaeger`: `http://localhost:16686`
+- Magistral CRM: `http://localhost:3000`
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9090`
+- Kibana: `http://localhost:5601`
+- Jaeger: `http://localhost:16686`
 
-## Порты по умолчанию
+## Порты По Умолчанию
 
 - `envoy`: `3000`
 - `iam` gRPC: `50053`
@@ -249,23 +348,9 @@ UI:
 - `postgres-core`: `5432`
 - `jaeger`: `16686`
 
-Остальные HTTP сервисы работают внутри Docker-сети и доступны снаружи через `envoy`.
+Остальные HTTP-сервисы доступны внутри Docker-сети и снаружи через `envoy`.
 
-## Логин по умолчанию
-
-Super-admin создаётся автоматически из env:
-
-- `IAM_BOOTSTRAP_SUPER_ADMIN_EMAIL`
-- `IAM_BOOTSTRAP_SUPER_ADMIN_PASSWORD`
-
-Значения по умолчанию:
-
-```text
-superadmin@example.com
-Passw0rd!
-```
-
-## Полезные команды
+## Тесты И Проверки
 
 Форматирование и линт:
 
@@ -281,30 +366,35 @@ task test
 task test-integration
 ```
 
-Генерация:
+Точечные проверки, которые часто нужны при работе с planning:
 
 ```powershell
-task ogen:gen:all
-task proto:gen
-task gen
+python -m pytest planning\tests\test_planning_flow.py -q
+task planning:dataset:test
+task planning:dataset:benchmark:2months
+task planning:dataset:benchmark:2months:visualize
+task planning:dataset:visualize
 ```
 
-Обновление зависимостей:
+Если Go test в локальной среде упирается в системный cache, можно задать cache внутри workspace:
 
 ```powershell
-task deps:update
+$env:GOCACHE='C:\Users\vladd\Desktop\magistral\.gocache'
+go test ./lesson/...
 ```
 
-## Важные файлы
+## Важные Файлы
 
-- [Taskfile.yml](/C:/Users/vladd/Desktop/magistral/Taskfile.yml:1)
-- [relations.md](/C:/Users/vladd/Desktop/magistral/relations.md:1)
-- [deploy/compose/envoy/envoy.yaml](/C:/Users/vladd/Desktop/magistral/deploy/compose/envoy/envoy.yaml:1)
-- [deploy/compose/core/prometheus/prometheus.yml](/C:/Users/vladd/Desktop/magistral/deploy/compose/core/prometheus/prometheus.yml:1)
-- [deploy/env/.env.template](/C:/Users/vladd/Desktop/magistral/deploy/env/.env.template:1)
+- [Taskfile.yml](./Taskfile.yml)
+- [deploy/compose/envoy/envoy.yaml](./deploy/compose/envoy/envoy.yaml)
+- [deploy/env/.env.template](./deploy/env/.env.template)
+- [frontend/src/App.jsx](./frontend/src/App.jsx)
+- [planning/README.md](./planning/README.md)
+- [planning/GA.md](./planning/GA.md)
 
-## Ограничения текущей версии
+## Ограничения Текущей Версии
 
-- `reporting` пока читает агрегаты напрямую из storage, а не через отдельные read APIs.
-- `planning` остаётся worker-сервисом и ещё не покрыт полноценным runtime read-contract слоем ко всем источникам.
-- frontend рассчитан на запуск в контейнерах через `envoy` и `nginx`.
+- Статусы planning request в `lesson` хранятся in-memory; для production нужна таблица в БД.
+- `reporting` пока читает агрегаты напрямую из storage, а не через отдельные read API.
+- Legacy endpoint `POST /resources/cars/{id}/assign` оставлен для совместимости, но planning и основной UI его не используют.
+- Frontend рассчитан на основной запуск через контейнеры, `envoy` и nginx.

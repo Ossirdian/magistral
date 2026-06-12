@@ -11,5 +11,11 @@ func normalizeFilter(filter model.LessonFilter) model.LessonFilter {
 	if filter.Offset < 0 {
 		filter.Offset = 0
 	}
+	if filter.SortBy == "" {
+		filter.SortBy = model.LessonSortByStartAt
+	}
+	if filter.SortOrder == "" {
+		filter.SortOrder = model.SortOrderAsc
+	}
 	return filter
 }

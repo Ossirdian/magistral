@@ -51,9 +51,27 @@ type LessonFilter struct {
 	Status       *LessonStatus
 	DateFrom     *time.Time
 	DateTo       *time.Time
+	SortBy       LessonSortBy
+	SortOrder    SortOrder
 	Limit        int
 	Offset       int
 }
+
+type LessonSortBy string
+
+const (
+	LessonSortByStartAt      LessonSortBy = "start_at"
+	LessonSortByStudentID    LessonSortBy = "student_id"
+	LessonSortByInstructorID LessonSortBy = "instructor_id"
+	LessonSortByCarID        LessonSortBy = "car_id"
+)
+
+type SortOrder string
+
+const (
+	SortOrderAsc  SortOrder = "asc"
+	SortOrderDesc SortOrder = "desc"
+)
 
 type BatchReplaceMode string
 

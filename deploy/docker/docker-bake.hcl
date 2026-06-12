@@ -38,6 +38,10 @@ variable "REPORTING_APP_IMAGE_NAME" {
   default = "magistral/reporting:local"
 }
 
+variable "AUDIT_APP_IMAGE_NAME" {
+  default = "magistral/audit:local"
+}
+
 target "iam" {
   context    = "."
   dockerfile = "deploy/docker/iam/Dockerfile"
@@ -98,6 +102,12 @@ target "reporting" {
   tags       = ["${REPORTING_APP_IMAGE_NAME}"]
 }
 
+target "audit" {
+  context    = "."
+  dockerfile = "deploy/docker/audit/Dockerfile"
+  tags       = ["${AUDIT_APP_IMAGE_NAME}"]
+}
+
 group "all" {
-  targets = ["iam", "saas", "resources", "lesson", "student", "payment", "document", "reporting", "planning", "frontend"]
+  targets = ["iam", "saas", "resources", "lesson", "student", "payment", "document", "reporting", "audit", "planning", "frontend"]
 }

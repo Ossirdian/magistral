@@ -12,6 +12,8 @@ vars:
   MOCKERY_VERSION: 'v2.53.6'
   YQ_VERSION: 'v4.52.5'
   GRPCURL_VERSION: 'v1.9.3'
+  SWAGGER_CONTAINER: 'magistral-swagger'
+  SWAGGER_PORT: '8088'
 
   BIN_DIR: '{{.ROOT_DIR}}/bin'
   GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
@@ -37,7 +39,7 @@ vars:
   MOCKERY_CONFIG: '{{.ROOT_DIR}}/resources/.mockery.yaml'
   BAKE_FILE: 'deploy/docker/docker-bake.hcl'
 
-  MODULES: 'iam lesson platform resources saas student payment document reporting shared'
+  MODULES: 'audit iam lesson platform resources saas student payment document reporting shared'
   INTEGRATION_MODULES: 'resources saas iam lesson student payment document reporting'
 
 
@@ -178,6 +180,16 @@ tasks:
       - task: proto:gen
       - task: ogen:gen:all
 
+  swagger:up:
+    desc: 'Start Swagger UI with all service OpenAPI contracts'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-swagger-up.ps1" -RootDir "{{.ROOT_DIR}}" -Port "{{.SWAGGER_PORT}}" -Container "{{.SWAGGER_CONTAINER}}"
+
+  swagger:down:
+    desc: 'Stop Swagger UI'
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -Command "docker rm -f '{{.SWAGGER_CONTAINER}}'"
+
   test:
     desc: 'Run unit tests for all modules'
     cmds:
@@ -189,10 +201,52 @@ tasks:
       - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/task-test-integration.ps1" -Modules "{{.INTEGRATION_MODULES}}"
 
   planning:test:
-    desc: 'Run Planning GA demo with mocked students, cars, instructors, and 30-day schedule'
+    desc: 'Run the single Planning regression test'
     dir: '{{.ROOT_DIR}}'
     cmds:
-      - python -m planning.demo_schedule
+      - python -m pytest planning/tests/test_planning_flow.py -q --capture=no -p no:cacheprovider
+
+  planning:ga:test:
+    desc: 'Alias for the single Planning regression test'
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - task: planning:test
+
+  planning:dataset:test:
+    desc: 'Generate the planning test dataset, run it through Planning, and print full diagnostics'
+    dir: '{{.ROOT_DIR}}'
+    env:
+      PLANNING_GA_POPULATION: 20
+      PLANNING_GA_GENERATIONS: 8
+      PLANNING_GA_MAX_SECONDS: 60
+    cmds:
+      - python -u planning/generate_test_dataset.py
+      - python -u -m planning.run_test_dataset --verbose --report-json planning/generated/planning_run_report.json
+
+  planning:dataset:benchmark:2months:
+    desc: 'Generate a 2-month Planning benchmark dataset and print algorithm diagnostics'
+    dir: '{{.ROOT_DIR}}'
+    env:
+      PLANNING_GA_POPULATION: 30
+      PLANNING_GA_GENERATIONS: 12
+      PLANNING_GA_MAX_SECONDS: 60
+    cmds:
+      - python -u planning/generate_test_dataset.py --dataset-id planning-benchmark-2-months --period-days 60 --students 134 --automatic-students 16 --manual-cars 10 --automatic-cars 1 --instructors 11 --existing-lessons 200 --output planning/generated/planning_benchmark_2months_dataset.json
+      - python -u -m planning.run_test_dataset --dataset planning/generated/planning_benchmark_2months_dataset.json --verbose --report-json planning/generated/planning_benchmark_2months_report.json
+
+  planning:dataset:visualize:
+    desc: 'Generate the planning dataset, run Planning, and build an HTML visualization'
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - task: planning:dataset:test
+      - python -u planning/visualize_test_dataset.py
+
+  planning:dataset:benchmark:2months:visualize:
+    desc: 'Generate the 2-month Planning benchmark and build an HTML visualization'
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - task: planning:dataset:benchmark:2months
+      - python -u planning/visualize_test_dataset.py --dataset planning/generated/planning_benchmark_2months_dataset.json --report planning/generated/planning_benchmark_2months_report.json --output planning/generated/planning_benchmark_2months_visualization.html
 
   env:generate:
     desc: 'Generate compose env files from templates'
@@ -266,6 +320,12 @@ tasks:
     cmds:
       - docker buildx bake -f "{{.BAKE_FILE}}" reporting
 
+  docker:build:audit:
+    desc: 'Build audit image via bake'
+    deps: [env:generate]
+    cmds:
+      - docker buildx bake -f "{{.BAKE_FILE}}" audit
+
   docker:build:student:
     desc: 'Build student image via bake'
     deps: [env:generate]
@@ -273,10 +333,19 @@ tasks:
       - docker buildx bake -f "{{.BAKE_FILE}}" student
 
   docker:build:all:
-    desc: 'Build all images via bake'
-    deps: [env:generate]
+    desc: 'Build all images sequentially'
     cmds:
-      - docker buildx bake -f "{{.BAKE_FILE}}" all
+      - task: docker:build:iam
+      - task: docker:build:saas
+      - task: docker:build:resources
+      - task: docker:build:lesson
+      - task: docker:build:student
+      - task: docker:build:payment
+      - task: docker:build:document
+      - task: docker:build:reporting
+      - task: docker:build:audit
+      - task: docker:build:planning
+      - task: docker:build:frontend
 
   docker:up:resources:
     desc: 'Start resources compose'
@@ -312,6 +381,7 @@ tasks:
       - task: docker:up:payment
       - task: docker:up:document
       - task: docker:up:reporting
+      - task: docker:up:audit
       - task: docker:up:planning
       - docker compose -f deploy/compose/frontend/docker-compose.yaml --env-file deploy/compose/frontend/.env up -d --build --force-recreate
       - task: docker:up:envoy
@@ -344,6 +414,20 @@ tasks:
       - task: docker:up:core
       - docker compose -f deploy/compose/reporting/docker-compose.yaml --env-file deploy/compose/reporting/.env up -d
 
+  docker:up:audit:
+    desc: 'Start audit compose'
+    deps: [env:generate]
+    cmds:
+      - task: docker:up:core
+      - task: docker:db:ensure:audit
+      - docker compose -f deploy/compose/audit/docker-compose.yaml --env-file deploy/compose/audit/.env up -d
+
+  docker:db:ensure:audit:
+    desc: 'Ensure audit database/user exist in postgres-core'
+    deps: [env:generate]
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "scripts/ensure-audit-db.ps1" -EnvFile "deploy/compose/core/.env" -Container "postgres-core"
+
   docker:up:planning:
     desc: 'Start planning compose'
     deps: [env:generate]
@@ -370,6 +454,7 @@ tasks:
       - task: docker:up:payment
       - task: docker:up:document
       - task: docker:up:reporting
+      - task: docker:up:audit
       - task: docker:up:planning
       - task: docker:up:frontend
 
@@ -428,6 +513,12 @@ tasks:
     cmds:
       - docker compose -f deploy/compose/reporting/docker-compose.yaml --env-file deploy/compose/reporting/.env down
 
+  docker:down:audit:
+    desc: 'Stop audit compose'
+    deps: [env:generate]
+    cmds:
+      - docker compose -f deploy/compose/audit/docker-compose.yaml --env-file deploy/compose/audit/.env down
+
   docker:down:student:
     desc: 'Stop student compose'
     deps: [env:generate]
@@ -441,6 +532,7 @@ tasks:
       - task: docker:down:planning
       - task: docker:down:document
       - task: docker:down:reporting
+      - task: docker:down:audit
       - task: docker:down:payment
       - task: docker:down:lesson
       - task: docker:down:student

@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	auditpkg "github.com/ossirdian/magistral/platform/pkg/audit"
 	"github.com/ossirdian/magistral/platform/pkg/closer"
 	"github.com/ossirdian/magistral/platform/pkg/httpx"
 	"github.com/ossirdian/magistral/platform/pkg/logger"
@@ -95,7 +96,7 @@ func New(ctx context.Context, cfg *cfgenv.Config) (*App, error) {
 
 	handlerWithMiddleware := ptracing.HTTPMiddleware(
 		"saas-http",
-		pmetrics.HTTPMiddleware(httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins())),
+		pmetrics.HTTPMiddleware(auditpkg.Middleware("saas", httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins()))),
 	)
 
 	server := &http.Server{

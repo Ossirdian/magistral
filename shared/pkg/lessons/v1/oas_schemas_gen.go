@@ -461,6 +461,7 @@ type Lesson struct {
 	EndAt        time.Time    `json:"end_at"`
 	Status       LessonStatus `json:"status"`
 	Comment      OptNilString `json:"comment"`
+	IsGenerated  bool         `json:"is_generated"`
 	CreatedAt    time.Time    `json:"created_at"`
 	UpdatedAt    time.Time    `json:"updated_at"`
 }
@@ -513,6 +514,11 @@ func (s *Lesson) GetStatus() LessonStatus {
 // GetComment returns the value of Comment.
 func (s *Lesson) GetComment() OptNilString {
 	return s.Comment
+}
+
+// GetIsGenerated returns the value of IsGenerated.
+func (s *Lesson) GetIsGenerated() bool {
+	return s.IsGenerated
 }
 
 // GetCreatedAt returns the value of CreatedAt.
@@ -573,6 +579,11 @@ func (s *Lesson) SetStatus(val LessonStatus) {
 // SetComment sets the value of Comment.
 func (s *Lesson) SetComment(val OptNilString) {
 	s.Comment = val
+}
+
+// SetIsGenerated sets the value of IsGenerated.
+func (s *Lesson) SetIsGenerated(val bool) {
+	s.IsGenerated = val
 }
 
 // SetCreatedAt sets the value of CreatedAt.
@@ -816,6 +827,61 @@ func (*LessonResponse) createLessonRes() {}
 func (*LessonResponse) getLessonRes()    {}
 func (*LessonResponse) patchLessonRes()  {}
 
+type LessonSortBy string
+
+const (
+	LessonSortByStartAt      LessonSortBy = "start_at"
+	LessonSortByStudentID    LessonSortBy = "student_id"
+	LessonSortByInstructorID LessonSortBy = "instructor_id"
+	LessonSortByCarID        LessonSortBy = "car_id"
+)
+
+// AllValues returns all LessonSortBy values.
+func (LessonSortBy) AllValues() []LessonSortBy {
+	return []LessonSortBy{
+		LessonSortByStartAt,
+		LessonSortByStudentID,
+		LessonSortByInstructorID,
+		LessonSortByCarID,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LessonSortBy) MarshalText() ([]byte, error) {
+	switch s {
+	case LessonSortByStartAt:
+		return []byte(s), nil
+	case LessonSortByStudentID:
+		return []byte(s), nil
+	case LessonSortByInstructorID:
+		return []byte(s), nil
+	case LessonSortByCarID:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LessonSortBy) UnmarshalText(data []byte) error {
+	switch LessonSortBy(data) {
+	case LessonSortByStartAt:
+		*s = LessonSortByStartAt
+		return nil
+	case LessonSortByStudentID:
+		*s = LessonSortByStudentID
+		return nil
+	case LessonSortByInstructorID:
+		*s = LessonSortByInstructorID
+		return nil
+	case LessonSortByCarID:
+		*s = LessonSortByCarID
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/LessonStatus
 type LessonStatus string
 
@@ -1013,6 +1079,52 @@ func (o OptInt) Or(d int) int {
 	return d
 }
 
+// NewOptLessonSortBy returns new OptLessonSortBy with value set to v.
+func NewOptLessonSortBy(v LessonSortBy) OptLessonSortBy {
+	return OptLessonSortBy{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptLessonSortBy is optional LessonSortBy.
+type OptLessonSortBy struct {
+	Value LessonSortBy
+	Set   bool
+}
+
+// IsSet returns true if OptLessonSortBy was set.
+func (o OptLessonSortBy) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptLessonSortBy) Reset() {
+	var v LessonSortBy
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptLessonSortBy) SetTo(v LessonSortBy) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptLessonSortBy) Get() (v LessonSortBy, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptLessonSortBy) Or(d LessonSortBy) LessonSortBy {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptLessonStatus returns new OptLessonStatus with value set to v.
 func NewOptLessonStatus(v LessonStatus) OptLessonStatus {
 	return OptLessonStatus{
@@ -1179,6 +1291,52 @@ func (o OptNilUUID) Get() (v uuid.UUID, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilUUID) Or(d uuid.UUID) uuid.UUID {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptSortOrder returns new OptSortOrder with value set to v.
+func NewOptSortOrder(v SortOrder) OptSortOrder {
+	return OptSortOrder{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptSortOrder is optional SortOrder.
+type OptSortOrder struct {
+	Value SortOrder
+	Set   bool
+}
+
+// IsSet returns true if OptSortOrder was set.
+func (o OptSortOrder) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptSortOrder) Reset() {
+	var v SortOrder
+	o.Value = v
+	o.Set = false
+}
+
+// SetTo sets value to v.
+func (o *OptSortOrder) SetTo(v SortOrder) {
+	o.Set = true
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptSortOrder) Get() (v SortOrder, ok bool) {
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptSortOrder) Or(d SortOrder) SortOrder {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -1423,3 +1581,44 @@ func (s *PlanningRequestResponse) SetData(val PlanningRequestAccepted) {
 }
 
 func (*PlanningRequestResponse) createPlanningRequestRes() {}
+
+type SortOrder string
+
+const (
+	SortOrderAsc  SortOrder = "asc"
+	SortOrderDesc SortOrder = "desc"
+)
+
+// AllValues returns all SortOrder values.
+func (SortOrder) AllValues() []SortOrder {
+	return []SortOrder{
+		SortOrderAsc,
+		SortOrderDesc,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s SortOrder) MarshalText() ([]byte, error) {
+	switch s {
+	case SortOrderAsc:
+		return []byte(s), nil
+	case SortOrderDesc:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *SortOrder) UnmarshalText(data []byte) error {
+	switch SortOrder(data) {
+	case SortOrderAsc:
+		*s = SortOrderAsc
+		return nil
+	case SortOrderDesc:
+		*s = SortOrderDesc
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}

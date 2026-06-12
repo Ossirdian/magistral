@@ -47,10 +47,12 @@ func (s *lessonReaderStub) CarLoads(ctx context.Context, schoolID string, filter
 }
 
 type resourcesReaderStub struct {
-	countInstructorsFn func(context.Context, string, *string) (int, error)
-	countCarsFn        func(context.Context, string, *string) (int, error)
-	listInstructorsFn  func(context.Context, string, *string) ([]model.InstructorRef, error)
-	listCarsFn         func(context.Context, string, *string) ([]model.CarRef, error)
+	countInstructorsFn              func(context.Context, string, *string) (int, error)
+	countCarsFn                     func(context.Context, string, *string) (int, error)
+	listInstructorsFn               func(context.Context, string, *string) ([]model.InstructorRef, error)
+	listCarsFn                      func(context.Context, string, *string) ([]model.CarRef, error)
+	instructorAvailabilityMinutesFn func(context.Context, string, model.ReportFilter) (map[string]int, error)
+	carAvailabilityMinutesFn        func(context.Context, string, model.ReportFilter) (map[string]int, error)
 }
 
 func (s *resourcesReaderStub) CountInstructors(ctx context.Context, schoolID string, branchID *string) (int, error) {
@@ -64,6 +66,18 @@ func (s *resourcesReaderStub) ListInstructors(ctx context.Context, schoolID stri
 }
 func (s *resourcesReaderStub) ListCars(ctx context.Context, schoolID string, branchID *string) ([]model.CarRef, error) {
 	return s.listCarsFn(ctx, schoolID, branchID)
+}
+func (s *resourcesReaderStub) InstructorAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error) {
+	if s.instructorAvailabilityMinutesFn == nil {
+		return map[string]int{}, nil
+	}
+	return s.instructorAvailabilityMinutesFn(ctx, schoolID, filter)
+}
+func (s *resourcesReaderStub) CarAvailabilityMinutes(ctx context.Context, schoolID string, filter model.ReportFilter) (map[string]int, error) {
+	if s.carAvailabilityMinutesFn == nil {
+		return map[string]int{}, nil
+	}
+	return s.carAvailabilityMinutesFn(ctx, schoolID, filter)
 }
 
 type paymentReaderStub struct {
@@ -189,6 +203,9 @@ func TestInstructorWorkloadMergesRefsAndLoads(t *testing.T) {
 				return []model.InstructorRef{{ID: "inst-1", FullName: "Ivan Instructor"}, {ID: "inst-2", FullName: "Zero Load"}}, nil
 			},
 			listCarsFn: func(context.Context, string, *string) ([]model.CarRef, error) { return nil, nil },
+			instructorAvailabilityMinutesFn: func(context.Context, string, model.ReportFilter) (map[string]int, error) {
+				return map[string]int{"inst-1": 480, "inst-2": 120}, nil
+			},
 		},
 		&paymentReaderStub{
 			paymentsTotalFn: func(context.Context, string, model.ReportFilter) (decimal.Decimal, error) {
@@ -210,10 +227,10 @@ func TestInstructorWorkloadMergesRefsAndLoads(t *testing.T) {
 	if len(items) != 2 {
 		t.Fatalf("expected 2 items, got %d", len(items))
 	}
-	if items[0].InstructorID != "inst-1" || items[0].TotalMinutes != 360 {
+	if items[0].InstructorID != "inst-1" || items[0].TotalMinutes != 360 || items[0].AvailableMinutes != 480 || items[0].IdleMinutes != 120 {
 		t.Fatalf("unexpected first item: %+v", items[0])
 	}
-	if items[1].InstructorID != "inst-2" || items[1].LessonsTotal != 0 {
+	if items[1].InstructorID != "inst-2" || items[1].LessonsTotal != 0 || items[1].AvailableMinutes != 120 || items[1].IdleMinutes != 120 {
 		t.Fatalf("unexpected zero-load item: %+v", items[1])
 	}
 }

@@ -23,6 +23,8 @@ type rawConfig struct {
 	TracingVersion                string `env:"TRACING_SERVICE_VERSION" envDefault:"dev"`
 	PlanningKafkaBootstrapServers string `env:"PLANNING_KAFKA_BOOTSTRAP_SERVERS" envDefault:"kafka:9092"`
 	PlanningKafkaRequestTopic     string `env:"PLANNING_KAFKA_REQUEST_TOPIC" envDefault:"planning.requests"`
+	PlanningKafkaResultTopic      string `env:"PLANNING_KAFKA_RESULT_TOPIC" envDefault:"planning.results"`
+	PlanningKafkaResultGroupID    string `env:"PLANNING_KAFKA_RESULT_GROUP_ID" envDefault:"lesson-planning-results"`
 }
 
 type Config struct {
@@ -97,3 +99,7 @@ func (c *planningConfig) KafkaBootstrapServers() []string {
 }
 
 func (c *planningConfig) KafkaRequestTopic() string { return c.raw.PlanningKafkaRequestTopic }
+func (c *planningConfig) KafkaResultTopic() string  { return c.raw.PlanningKafkaResultTopic }
+func (c *planningConfig) KafkaResultGroupID() string {
+	return c.raw.PlanningKafkaResultGroupID
+}

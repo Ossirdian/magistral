@@ -8,7 +8,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	ptracing "github.com/ossirdian/magistral/platform/pkg/tracing"
 	"github.com/segmentio/kafka-go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -55,6 +60,18 @@ func (p *Producer) Publish(ctx context.Context, schoolID string, userID string, 
 		requestID = uuid.NewString()
 	}
 
+	ctx, span := ptracing.StartSpan(ctx, "lesson.planning.publish",
+		traceAttributes(
+			attribute.String("planning.request_id", requestID),
+			attribute.String("messaging.system", "kafka"),
+			attribute.String("messaging.destination.name", p.writer.Topic),
+		)...,
+	)
+	defer span.End()
+
+	traceContext := map[string]string{}
+	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(traceContext))
+
 	message := RequestMessage{
 		SchoolID:           strings.TrimSpace(schoolID),
 		PeriodStart:        req.PeriodStart,
@@ -66,6 +83,7 @@ func (p *Producer) Publish(ctx context.Context, schoolID string, userID string, 
 		ReplaceStrategy:    defaultReplaceStrategy(req.ReplaceStrategy),
 		RequestedByUserID:  strings.TrimSpace(userID),
 		RequestID:          requestID,
+		TraceContext:       traceContext,
 	}
 	if len(message.StudentIDs) == 0 && len(message.GroupIDs) == 0 {
 		return RequestAccepted{}, ErrInvalidRequest
@@ -87,6 +105,14 @@ func (p *Producer) Publish(ctx context.Context, schoolID string, userID string, 
 	}
 
 	return RequestAccepted{RequestID: requestID, Status: "queued"}, nil
+}
+
+func traceAttributes(attrs ...attribute.KeyValue) []trace.SpanStartOption {
+	options := make([]trace.SpanStartOption, 0, len(attrs))
+	for _, attr := range attrs {
+		options = append(options, trace.WithAttributes(attr))
+	}
+	return options
 }
 
 func valueOrEmpty(value *string) string {
@@ -116,7 +142,7 @@ func cleanStrings(values []string) []string {
 func defaultReplaceStrategy(value string) string {
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return "append"
+		return "replace_generated_only"
 	}
 	return value
 }

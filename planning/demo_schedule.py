@@ -13,7 +13,8 @@ from planning.app.genetic import (
     DEFAULT_TOURNAMENT_SIZE,
     evolve_plan,
 )
-from planning.app.models import LESSON_DURATION, ExistingLesson, PlanningContext, StudentPreference
+from planning.app.models import LESSON_DURATION, ExistingLesson, PlanningContext, StudentPreference, TimeSlot
+from planning.app.option_builder import build_valid_options
 
 
 SCHOOL_ID = "school-demo"
@@ -37,6 +38,7 @@ def main() -> None:
 
     preferences, student_transmissions = _build_student_preferences(students)
     existing_lessons = _build_existing_lessons(period_start, instructors, manual_cars)
+    target_lessons_by_student = {student_id: 4 for student_id in students}
     context = PlanningContext(
         students_to_plan=students,
         instructor_ids=instructors,
@@ -47,11 +49,19 @@ def main() -> None:
         car_transmissions={**{car_id: "manual" for car_id in manual_cars}, **{car_id: "automatic" for car_id in automatic_cars}},
         period_start=period_start,
         period_end=period_end,
+        lesson_demands=[
+            student_id
+            for student_id, target_lessons in target_lessons_by_student.items()
+            for _index in range(target_lessons)
+        ],
+        target_lessons_by_student=target_lessons_by_student,
     )
     slots = _build_working_slots(period_start, PERIOD_DAYS)
+    options_by_student, total_car_slots = build_valid_options(slots, context)
+    context = _with_options(context, options_by_student, total_car_slots)
 
     _print_input_summary(context, slots)
-    lessons, unassigned_students, conflicts, score = evolve_plan(slots, context)
+    lessons, unassigned_students, conflicts, score = evolve_plan(context)
     lessons = sorted(lessons, key=lambda lesson: (lesson.start_at, lesson.student_id))
 
     print()
@@ -154,19 +164,19 @@ def _build_existing_lessons(
     return lessons
 
 
-def _build_working_slots(period_start: datetime, days: int) -> list[tuple[datetime, datetime]]:
+def _build_working_slots(period_start: datetime, days: int) -> list[TimeSlot]:
     daily_starts = [time(9, 0), time(10, 30), time(12, 0), time(13, 30), time(15, 0), time(16, 30)]
-    slots: list[tuple[datetime, datetime]] = []
+    slots: list[TimeSlot] = []
     start_day = period_start.date()
     for day_offset in range(days):
         day = start_day + timedelta(days=day_offset)
         for slot_time in daily_starts:
             start_at = datetime.combine(day, slot_time, tzinfo=period_start.tzinfo)
-            slots.append((start_at, start_at + LESSON_DURATION))
+            slots.append(TimeSlot(index=len(slots), start_at=start_at, end_at=start_at + LESSON_DURATION))
     return slots
 
 
-def _print_input_summary(context: PlanningContext, slots: list[tuple[datetime, datetime]]) -> None:
+def _print_input_summary(context: PlanningContext, slots: list[TimeSlot]) -> None:
     student_transmissions = Counter(context.student_transmissions.values())
     car_transmissions = Counter(context.car_transmissions.values())
 
@@ -176,7 +186,33 @@ def _print_input_summary(context: PlanningContext, slots: list[tuple[datetime, d
     print(f"  instructors: {len(context.instructor_ids)}")
     print(f"  existing_lessons: {len(context.existing_lessons)} ({EXISTING_LESSONS_PER_WEEK} per week)")
     print(f"  working_slots: {len(slots)}")
+    print(f"  car_slots: {context.total_car_slots}")
+    print(f"  valid_options: {sum(len(options) for options in context.valid_options_by_student.values())}")
     print(f"  lesson_duration_minutes: {int(LESSON_DURATION.total_seconds() // 60)}")
+
+
+def _with_options(
+    context: PlanningContext,
+    options_by_student,
+    total_car_slots: int,
+) -> PlanningContext:
+    return PlanningContext(
+        students_to_plan=context.students_to_plan,
+        instructor_ids=context.instructor_ids,
+        car_ids=context.car_ids,
+        existing_lessons=context.existing_lessons,
+        student_preferences=context.student_preferences,
+        student_transmissions=context.student_transmissions,
+        car_transmissions=context.car_transmissions,
+        period_start=context.period_start,
+        period_end=context.period_end,
+        instructor_availability=context.instructor_availability,
+        car_availability=context.car_availability,
+        lesson_demands=context.lesson_demands,
+        target_lessons_by_student=context.target_lessons_by_student,
+        valid_options_by_student=options_by_student,
+        total_car_slots=total_car_slots,
+    )
 
 
 def _print_existing_schedule(existing_lessons: list[ExistingLesson]) -> None:

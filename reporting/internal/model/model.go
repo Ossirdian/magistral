@@ -50,18 +50,22 @@ type LessonsReport struct {
 }
 
 type InstructorWorkloadItem struct {
-	InstructorID string
-	FullName     string
-	LessonsTotal int
-	TotalMinutes int
+	InstructorID     string
+	FullName         string
+	LessonsTotal     int
+	TotalMinutes     int
+	AvailableMinutes int
+	IdleMinutes      int
 }
 
 type CarUtilizationItem struct {
-	CarID        string
-	PlateNumber  string
-	DisplayName  string
-	LessonsTotal int
-	TotalMinutes int
+	CarID            string
+	PlateNumber      string
+	DisplayName      string
+	LessonsTotal     int
+	TotalMinutes     int
+	AvailableMinutes int
+	IdleMinutes      int
 }
 
 type FinancialReport struct {

@@ -1,237 +1,285 @@
-# Planning Service
+# Сервис Planning
 
-`Planning Service` is a Python worker that consumes planning requests from Kafka,
-builds a candidate lesson plan with a genetic algorithm, and publishes the
-result back to Kafka.
+`planning` строит расписание индивидуальных занятий по вождению. Сервис получает задачу из Kafka, загружает актуальный снимок данных из `student`, `resources` и `lesson`, строит варианты занятий и публикует результат обратно в Kafka.
 
-## Responsibilities
+Одно занятие длится `90` минут.
 
-- consume planning requests from Kafka
-- expand `group_ids` into a unique student selection
-- build individual lessons with fixed `90` minute duration
-- enforce hard constraints for students, instructors, cars, and existing lessons
-- optimize the plan score with soft student preferences
-- publish planning results for downstream orchestration
+## Общий Поток
 
-## Non-Responsibilities
+1. `lesson` принимает `POST /planning/requests`.
+2. `lesson` публикует задачу в Kafka topic `planning.requests`.
+3. `planning` загружает студентов, инструкторов, автомобили, доступность ресурсов и существующие занятия.
+4. `planning` строит временные слоты по дням в окне `08:00-20:00`.
+5. Для автомобилей без явно заданной доступности создаются дефолтные окна `08:00-20:00`.
+6. Строятся допустимые варианты занятий: студент, слот, автомобиль, инструктор.
+7. Greedy-часть строит базовое расписание без конфликтов.
+8. GA получает greedy-расписание как первую особь и улучшает распределение.
+9. Результат публикуется в Kafka result topic.
+10. `lesson` применяет результат и переводит planning request в `completed`.
 
-- no CRUD for students, groups, resources, or lessons
-- no direct lesson persistence
-- no authentication
+## Правила Планирования
 
-## Runtime Flow
+- занятие всегда индивидуальное;
+- студент не может получить два занятия в один временной слот;
+- инструктор не может вести два занятия в один временной слот;
+- автомобиль не может быть занят двумя занятиями в один временной слот;
+- трансмиссия студента должна совпадать с трансмиссией автомобиля;
+- существующие занятия блокируют соответствующего инструктора и автомобиль;
+- доступность инструкторов и автомобилей является жестким ограничением;
+- в режимах `merge` и `replace_generated_only` старые generated-занятия не блокируют новое расписание;
+- привязка автомобиля к инструктору из `resources` не используется: planning выбирает любого доступного инструктора и любой подходящий автомобиль.
 
-1. `lesson` service accepts `POST /planning/requests`
-2. `lesson` publishes a message to `planning.requests`
-3. `planning` consumes the request
-4. `planning` loads student/resource/existing lesson data through adapters
-5. `planning` generates time slots for the requested window
-6. `planning` runs GA evolution and decodes the best individual
-7. `planning` publishes the result to `planning.results`
+## Demand По Студентам
 
-## Request Contract
+Целевое количество занятий считается в таком порядке:
 
-Minimal payload:
+1. `remaining_lessons_required_max`;
+2. `remaining_lessons`;
+3. `target_lessons`;
+4. fallback из `remaining_hours / 1.5`.
 
-```json
-{
-  "school_id": "uuid",
-  "period_start": "2026-04-27T09:00:00Z",
-  "period_end": "2026-04-27T18:00:00Z",
-  "student_ids": ["uuid"],
-  "group_ids": ["uuid"],
-  "branch_ids": ["uuid"],
-  "replace_strategy": "append",
-  "request_id": "string"
-}
+Если используется fallback по часам, planning ограничивает целевой demand программой:
+
+- `manual`: максимум `28` занятий;
+- `automatic`: максимум `27` занятий.
+
+Уже пройденные часы учитываются через `total_hours_completed`, либо через сумму `manual_hours_completed + lesson_hours_completed`.
+
+## Greedy И GA
+
+Planning использует гибридный подход:
+
+```text
+greedy seed -> ограниченный набор LessonOption -> GA
 ```
 
-Payload with soft preferences:
+Greedy seed быстро строит валидную базу расписания. Он учитывает:
 
-```json
-{
-  "school_id": "uuid",
-  "period_start": "2026-04-27T09:00:00Z",
-  "period_end": "2026-04-27T18:00:00Z",
-  "student_ids": ["student-1"],
-  "student_preferences": {
-    "student-1": {
-      "preferred_weekdays": ["monday", "wednesday"],
-      "preferred_time_windows": ["daytime"]
-    }
-  },
-  "group_ids": [],
-  "branch_ids": [],
-  "replace_strategy": "append",
-  "request_id": "req-1"
-}
-```
+- доступность автомобиля;
+- доступность инструктора;
+- занятость студента, инструктора и автомобиля;
+- трансмиссию;
+- оставшийся demand студента;
+- предпочтения по дням недели и времени.
 
-## Scheduling Model
+GA не перебирает сырые комбинации `слот + автомобиль + инструктор`. Он работает только с заранее проверенными `LessonOption`, поэтому поиск ограничен валидными вариантами.
 
-- `Group` is only a student selection mechanism
-- output lessons are always individual
-- lesson duration is fixed at `90` minutes
-- `student_ids` and expanded `group_ids` are merged into `students_to_plan`
-- each student is encoded by 3 genes:
-  - slot index
-  - instructor index
-  - car index
+## Оценка Расписания
 
-## Hard Constraints
-
-The planner rejects a candidate lesson if it overlaps an already scheduled or
-existing lesson for the same:
-
-- student
-- instructor
-- car
-
-Conflict reasons currently emitted by the decoder:
-
-- `no_available_slot`
-- `resource_conflict`
-
-## Soft Constraints
-
-Student preferences are modeled as soft constraints and affect score, but do
-not block plan generation.
-
-Supported preferences:
-
-- `preferred_weekdays`: `monday` ... `sunday`
-- `preferred_time_windows`: `morning`, `daytime`, `evening`
-
-Current scoring effect per scheduled lesson:
-
-- `+20` when weekday matches a preferred weekday
-- `-15` when weekday preferences exist and the lesson misses them
-- `+20` when time window matches a preferred time window
-- `-15` when time preferences exist and the lesson misses them
-
-Time windows:
-
-- `morning`: hour `< 12`
-- `daytime`: hour `< 17`
-- `evening`: hour `>= 17`
-
-This follows the same product meaning as student-preference timetabling
-literature: preferences are optimization targets, not hard feasibility rules.
-
-## Genetic Algorithm
-
-Implementation uses `DEAP` and a simple evolutionary loop in
-`planning/app/genetic.py`.
-
-Current defaults:
-
-- deterministic seed: `42`
-- population size: `80`
-- generations: `40`
-- selection: tournament, `tournsize=3`
-- crossover: two-point crossover
-- mutation probability per individual: `0.25`
-- mutation probability per gene in a triplet: `0.2`
-
-If there are no students, no instructors, no cars, or no time slots, the
-planner returns an empty result with all students marked unassigned.
-
-## Fitness Function
-
-Final score is computed as:
+Итоговая оценка считается в `planning/app/fitness.py`:
 
 ```text
 scheduled_bonus
-- backlog_penalty
+- unmet_lesson_penalty
 - conflict_penalty
 - idle_penalty
+- unevenness_penalty
+- resource_unevenness_penalty
 + preference_bonus
 ```
 
-Current components:
+Основные веса:
 
-- `scheduled_bonus = lessons * 100`
-- `backlog_penalty = unassigned_students * 50`
-- `conflict_penalty = conflicts * 100`
-- `idle_penalty` depends on unused effective resource utilization
-- `preference_bonus` rewards matching weekday/time-window preferences
+- `scheduled_lesson_bonus_weight = 100`;
+- `missing_lesson_penalty_weight = 300`;
+- `conflict_penalty_weight = 250`;
+- `idle_capacity_penalty_weight = 20`;
+- `student_unevenness_penalty_weight = 150`;
+- `resource_unevenness_penalty_weight = 12`;
+- `preference_match_bonus_weight = 10`;
+- `preference_miss_penalty_weight = 5`.
 
-## Result Contract
+`resource_unevenness_penalty` для автомобилей считается внутри трансмиссии. Единственный автомобиль на автомате не сравнивается с механикой.
 
-Result payload includes:
+В `score_breakdown` также попадают диагностические параметры:
 
-- `request_id`
-- `school_id`
-- `lessons`
-- `unassigned_students`
-- `conflicts`
-- `score`
-- `resource_idle_seconds`
+- `valid_options`;
+- `avg_options_per_student`;
+- `students_with_valid_options`;
+- `total_car_slots`;
+- `ga_population`;
+- `ga_generations`;
+- `ga_max_seconds`;
+- статистика по существующим занятиям: loaded, used, skipped generated, skipped deleted/cancelled.
 
-`resource_idle_seconds` is computed over the requested planning window as:
+## Логи
 
-- total instructor and car capacity in seconds
-- minus used capacity for generated lessons
+При включенном `PLANNING_VERBOSE=1` сервис печатает промежуточные этапы:
 
-Each generated lesson consumes one instructor and one car.
+- загрузку данных;
+- количество слотов;
+- effective demand;
+- количество valid options;
+- среднее количество options на студента;
+- старт и завершение GA.
 
-## Observability
+Обычный worker-лог после завершения содержит `planning best solution score breakdown`, включая:
 
-Prometheus metrics are exposed on `:${PLANNING_METRICS_PORT}/metrics`.
+```text
+scheduled_lessons
+missing_target_lessons
+conflicts
+valid_options
+avg_options_per_student
+score
+replace_strategy
+```
 
-Counters:
+## Параметры GA
 
-- `planning_requests_processed_total`
-- `planning_requests_failed_total`
-- `planning_assigned_lessons_total`
-- `planning_conflicts_total`
+Параметры по умолчанию:
 
-Histograms:
+- `PLANNING_GA_POPULATION = 100`;
+- `PLANNING_GA_GENERATIONS = 50`;
+- `PLANNING_GA_MAX_SECONDS = 60`.
 
-- `planning_scheduled_lessons`
-- `planning_conflicts_per_request`
-- `planning_unassigned_students`
-- `planning_resource_idle_seconds`
-- `planning_request_duration_seconds`
+Для тестового task используется быстрый режим:
 
-Tracing:
+```yaml
+PLANNING_GA_POPULATION: 20
+PLANNING_GA_GENERATIONS: 8
+PLANNING_GA_MAX_SECONDS: 60
+```
 
-- OTLP traces are sent to `Jaeger`
-- service name: `planning`
+Переопределение в PowerShell:
 
-Logging:
+```powershell
+$env:PLANNING_GA_POPULATION='50'
+$env:PLANNING_GA_GENERATIONS='25'
+$env:PLANNING_GA_MAX_SECONDS='60'
+task planning:dataset:test
+```
 
-- structured logs are emitted for successful and failed planning requests
+`PLANNING_GA_MAX_SECONDS` ограничивает только GA-цикл. Если лимит достигнут раньше последнего поколения, сервис возвращает лучший найденный результат из `HallOfFame`.
 
-## Environment
+## Тестовый Датасет
 
-- `PLANNING_KAFKA_BOOTSTRAP_SERVERS`
-- `PLANNING_KAFKA_REQUEST_TOPIC`
-- `PLANNING_KAFKA_RESULT_TOPIC`
-- `PLANNING_KAFKA_GROUP_ID`
-- `PLANNING_LOG_LEVEL`
-- `PLANNING_METRICS_PORT`
-- `TRACING_COLLECTOR_ENDPOINT`
-- `TRACING_SERVICE_VERSION`
+Команда:
 
-## Layout
+```powershell
+task planning:dataset:test
+```
 
-- `planning/main.py` - service entrypoint
-- `planning/app/settings.py` - environment configuration
-- `planning/app/kafka_consumer.py` - Kafka consumer/producer loop
-- `planning/app/models.py` - request/result models
-- `planning/app/data_loader.py` - external data loading interfaces
-- `planning/app/constraints.py` - hard-constraint checks
-- `planning/app/fitness.py` - scoring with soft preferences
-- `planning/app/genetic.py` - population evolution and decoding
-- `planning/app/mutation.py` - mutation step
-- `planning/app/crossover.py` - crossover step
-- `planning/app/repair.py` - repair step
-- `planning/app/planner.py` - orchestration and idle-capacity calculation
+Текущий месячный датасет подобран так, чтобы суммарный простой автомобилей и инструкторов был меньше `5%`:
 
-## Status
+- `67` студентов;
+- `59` студентов на механике по `28` занятий;
+- `8` студентов на автомате по `27` занятий;
+- `11` автомобилей, из них `1` автомат;
+- `11` инструкторов;
+- `100` существующих занятий других групп;
+- период `30` дней;
+- цель основной группы: `1868` занятий;
+- общий спрос с существующими занятиями: `1968` занятий.
 
-This implementation is a runnable GA-based planning worker with hard
-resource-conflict rules and soft student-preference optimization. External data
-loading remains adapter-based and is currently suitable for integration wiring
-and local verification.
+Ожидаемый результат:
+
+```text
+scheduled_lessons: 1868
+missing_target_lessons: 0
+conflicts: 0
+car_idle_percent: 1.60%
+instructor_idle_percent: 1.60%
+```
+
+Файлы отчета:
+
+```text
+planning/generated/planning_test_dataset.json
+planning/generated/planning_run_report.json
+```
+
+## Benchmark На 2 Месяца
+
+Команда:
+
+```powershell
+task planning:dataset:benchmark:2months
+```
+
+Датасет рассчитан на `60` дней:
+
+- `134` студента;
+- `118` студентов на механике по `28` занятий;
+- `16` студентов на автомате по `27` занятий;
+- `11` автомобилей, из них `1` автомат;
+- `11` инструкторов;
+- `200` существующих занятий других групп;
+- цель основной группы: `3736` занятий;
+- общий спрос с существующими занятиями: `3936` занятий;
+- доступно `4000` слотов по `90` минут.
+
+Проверенный результат:
+
+```text
+scheduled_lessons: 3736
+missing_target_lessons: 0
+conflicts: 0
+car_idle_percent: 1.60%
+instructor_idle_percent: 1.60%
+valid_options: 27275
+avg_options_per_student: 203.54
+```
+
+Файлы отчета:
+
+```text
+planning/generated/planning_benchmark_2months_dataset.json
+planning/generated/planning_benchmark_2months_report.json
+```
+
+HTML-визуализация:
+
+```powershell
+task planning:dataset:benchmark:2months:visualize
+```
+
+```text
+planning/generated/planning_benchmark_2months_visualization.html
+```
+
+## Визуализация
+
+Команда:
+
+```powershell
+task planning:dataset:visualize
+```
+
+Создает:
+
+```text
+planning/generated/planning_visualization.html
+```
+
+HTML показывает:
+
+- сводку по датасету;
+- календарь с количеством занятий по дням;
+- загрузку и простой автомобилей;
+- загрузку и простой инструкторов;
+- лучший fitness score и разбивку;
+- остаток занятий по каждому студенту;
+- итоговое расписание.
+
+## Структура
+
+- `planning/app/planner.py` - основной orchestration;
+- `planning/app/data_loader.py` - загрузка данных из сервисов;
+- `planning/app/option_builder.py` - greedy seed и построение options;
+- `planning/app/genetic.py` - GA, мутации, decode особей;
+- `planning/app/fitness.py` - fitness score;
+- `planning/app/kafka_consumer.py` - Kafka worker;
+- `planning/generate_test_dataset.py` - генератор тестового датасета;
+- `planning/run_test_dataset.py` - прогон датасета через Planner;
+- `planning/visualize_test_dataset.py` - HTML-визуализация.
+
+## Проверка
+
+```powershell
+python -m pytest planning\tests\test_planning_flow.py -q
+task planning:dataset:test
+task planning:dataset:benchmark:2months
+task planning:dataset:benchmark:2months:visualize
+task planning:dataset:visualize
+```

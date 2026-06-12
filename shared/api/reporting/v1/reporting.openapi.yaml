@@ -268,7 +268,7 @@ components:
           format: int64
     InstructorWorkloadItem:
       type: object
-      required: [instructor_id, full_name, lessons_total, total_minutes]
+      required: [instructor_id, full_name, lessons_total, total_minutes, available_minutes, idle_minutes]
       properties:
         instructor_id:
           type: string
@@ -281,9 +281,15 @@ components:
         total_minutes:
           type: integer
           format: int64
+        available_minutes:
+          type: integer
+          format: int64
+        idle_minutes:
+          type: integer
+          format: int64
     CarUtilizationItem:
       type: object
-      required: [car_id, plate_number, display_name, lessons_total, total_minutes]
+      required: [car_id, plate_number, display_name, lessons_total, total_minutes, available_minutes, idle_minutes]
       properties:
         car_id:
           type: string
@@ -296,6 +302,12 @@ components:
           type: integer
           format: int64
         total_minutes:
+          type: integer
+          format: int64
+        available_minutes:
+          type: integer
+          format: int64
+        idle_minutes:
           type: integer
           format: int64
     FinancialReport:

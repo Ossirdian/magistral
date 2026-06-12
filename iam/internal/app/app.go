@@ -20,6 +20,7 @@ import (
 	"github.com/ossirdian/magistral/iam/internal/repository"
 	svcpkg "github.com/ossirdian/magistral/iam/internal/service"
 	iamservice "github.com/ossirdian/magistral/iam/internal/service/iam"
+	auditpkg "github.com/ossirdian/magistral/platform/pkg/audit"
 	"github.com/ossirdian/magistral/platform/pkg/closer"
 	platformgrpc "github.com/ossirdian/magistral/platform/pkg/grpc/health"
 	"github.com/ossirdian/magistral/platform/pkg/httpx"
@@ -110,7 +111,7 @@ func New(ctx context.Context, cfg *env.Config) (*App, error) {
 
 	httpServer := &http.Server{
 		Addr:              cfg.HTTP().Addr(),
-		Handler:           ptracing.HTTPMiddleware("iam-http", pmetrics.HTTPMiddleware(httpx.WithCORS(httpMux, cfg.HTTP().AllowedOrigins()))),
+		Handler:           ptracing.HTTPMiddleware("iam-http", pmetrics.HTTPMiddleware(auditpkg.Middleware("iam", httpx.WithCORS(httpMux, cfg.HTTP().AllowedOrigins())))),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

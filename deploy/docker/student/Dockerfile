@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM golang:1.26.2-alpine AS builder
 
 RUN apk add --no-cache git
@@ -22,15 +23,15 @@ COPY saas ./saas
 COPY student ./student
 COPY shared ./shared
 
-RUN cd iam && go mod download
-RUN cd platform && go mod download
-RUN cd reporting && go mod download
-RUN cd shared && go mod download
-RUN cd resources && go mod download
-RUN cd saas && go mod download
-RUN cd student && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd iam && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd platform && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd reporting && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd shared && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd resources && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd saas && go mod download
+RUN --mount=type=cache,target=/go/pkg/mod cd student && go mod download
 
-RUN cd student && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -mod=mod -o /app/app-student ./cmd/http-server
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd student && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -p=2 -mod=mod -o /app/app-student ./cmd/http-server
 
 FROM alpine:3.22.0
 

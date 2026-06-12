@@ -1760,6 +1760,10 @@ func (s *Lesson) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
+		e.FieldStart("is_generated")
+		e.Bool(s.IsGenerated)
+	}
+	{
 		e.FieldStart("created_at")
 		json.EncodeDateTime(e, s.CreatedAt)
 	}
@@ -1769,7 +1773,7 @@ func (s *Lesson) encodeFields(e *jx.Encoder) {
 	}
 }
 
-var jsonFieldsNameOfLesson = [12]string{
+var jsonFieldsNameOfLesson = [13]string{
 	0:  "id",
 	1:  "school_id",
 	2:  "branch_id",
@@ -1780,8 +1784,9 @@ var jsonFieldsNameOfLesson = [12]string{
 	7:  "end_at",
 	8:  "status",
 	9:  "comment",
-	10: "created_at",
-	11: "updated_at",
+	10: "is_generated",
+	11: "created_at",
+	12: "updated_at",
 }
 
 // Decode decodes Lesson from json.
@@ -1907,8 +1912,20 @@ func (s *Lesson) Decode(d *jx.Decoder) error {
 			}(); err != nil {
 				return errors.Wrap(err, "decode field \"comment\"")
 			}
-		case "created_at":
+		case "is_generated":
 			requiredBitSet[1] |= 1 << 2
+			if err := func() error {
+				v, err := d.Bool()
+				s.IsGenerated = bool(v)
+				if err != nil {
+					return err
+				}
+				return nil
+			}(); err != nil {
+				return errors.Wrap(err, "decode field \"is_generated\"")
+			}
+		case "created_at":
+			requiredBitSet[1] |= 1 << 3
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.CreatedAt = v
@@ -1920,7 +1937,7 @@ func (s *Lesson) Decode(d *jx.Decoder) error {
 				return errors.Wrap(err, "decode field \"created_at\"")
 			}
 		case "updated_at":
-			requiredBitSet[1] |= 1 << 3
+			requiredBitSet[1] |= 1 << 4
 			if err := func() error {
 				v, err := json.DecodeDateTime(d)
 				s.UpdatedAt = v
@@ -1942,7 +1959,7 @@ func (s *Lesson) Decode(d *jx.Decoder) error {
 	var failures []validate.FieldError
 	for i, mask := range [2]uint8{
 		0b11111011,
-		0b00001101,
+		0b00011101,
 	} {
 		if result := (requiredBitSet[i] & mask) ^ mask; result != 0 {
 			// Mask only required fields and check equality to mask using XOR.

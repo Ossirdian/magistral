@@ -70,6 +70,11 @@ static_resources:
                             cluster: saas_http
                             prefix_rewrite: /
                         - match:
+                            prefix: /api/audit/
+                          route:
+                            cluster: audit_http
+                            prefix_rewrite: /audit/
+                        - match:
                             prefix: /api/resources/
                           route:
                             cluster: resources_http
@@ -182,6 +187,18 @@ static_resources:
                     socket_address:
                       address: app-saas
                       port_value: 8081
+    - name: audit_http
+      type: STRICT_DNS
+      connect_timeout: 2s
+      load_assignment:
+        cluster_name: audit_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: app-audit
+                      port_value: 8088
     - name: resources_http
       type: STRICT_DNS
       connect_timeout: 2s

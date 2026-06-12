@@ -19,7 +19,7 @@ foreach ($line in Get-Content $targetEnv) {
     }
 }
 
-foreach ($service in @("core", "resources", "saas", "iam", "lesson", "student", "payment", "document", "reporting", "planning", "frontend", "envoy")) {
+foreach ($service in @("core", "resources", "saas", "iam", "lesson", "student", "payment", "document", "reporting", "audit", "planning", "frontend", "envoy")) {
     $templatePath = Join-Path $root "$service.env.template"
     if (-not (Test-Path $templatePath)) {
         continue

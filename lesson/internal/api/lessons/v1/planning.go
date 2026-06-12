@@ -37,6 +37,17 @@ func (a *api) CreatePlanningRequest(ctx context.Context, req *lessonsv1.Planning
 			return &res, nil
 		}
 	}
+	if a.planningStatuses != nil {
+		a.planningStatuses.SaveQueued(schoolID, planning.RequestCreate{
+			PeriodStart:     req.PeriodStart,
+			PeriodEnd:       req.PeriodEnd,
+			StudentIDs:      uuidStrings(req.StudentIds),
+			GroupIDs:        uuidStrings(req.GroupIds),
+			BranchIDs:       uuidStrings(req.BranchIds),
+			ReplaceStrategy: string(req.ReplaceStrategy),
+			RequestID:       optNilStringToPtr(req.RequestID),
+		}, planning.RequestAccepted{RequestID: accepted.RequestID, Status: accepted.Status})
+	}
 
 	return &lessonsv1.PlanningRequestResponse{
 		Data: lessonsv1.PlanningRequestAccepted{

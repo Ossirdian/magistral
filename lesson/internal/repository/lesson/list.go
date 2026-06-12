@@ -2,6 +2,7 @@ package lesson
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ossirdian/magistral/lesson/internal/model"
 	def "github.com/ossirdian/magistral/lesson/internal/repository"
@@ -82,7 +83,7 @@ func (r *repository) List(ctx context.Context, schoolID string, filter model.Les
 	}
 
 	query, args, err := selectBuilder.
-		OrderBy("start_at ASC", "id ASC").
+		OrderBy(lessonOrderBy(filter)...).
 		Limit(uint64(limit)).
 		Offset(uint64(offset)).
 		ToSql()
@@ -109,4 +110,29 @@ func (r *repository) List(ctx context.Context, schoolID string, filter model.Les
 	}
 
 	return items, model.PageMeta{Limit: limit, Offset: offset, Count: total}, nil
+}
+
+func lessonOrderBy(filter model.LessonFilter) []string {
+	column := "start_at"
+	switch filter.SortBy {
+	case model.LessonSortByStudentID:
+		column = "student_id"
+	case model.LessonSortByInstructorID:
+		column = "instructor_id"
+	case model.LessonSortByCarID:
+		column = "car_id"
+	case model.LessonSortByStartAt, "":
+		column = "start_at"
+	}
+
+	direction := "ASC"
+	if filter.SortOrder == model.SortOrderDesc {
+		direction = "DESC"
+	}
+
+	return []string{
+		fmt.Sprintf("%s %s", column, direction),
+		"start_at ASC",
+		"id ASC",
+	}
 }

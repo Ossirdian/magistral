@@ -14,4 +14,5 @@ type LessonRepository interface {
 	Update(ctx context.Context, schoolID, lessonID string, patch model.LessonPatch) (model.Lesson, error)
 	Delete(ctx context.Context, schoolID, lessonID string) error
 	DeleteGeneratedInWindow(ctx context.Context, schoolID string, studentIDs []string, dateFrom, dateTo time.Time) error
+	DeleteGeneratedInWindowByBranches(ctx context.Context, schoolID string, branchIDs []string, includeNullBranch bool, dateFrom, dateTo time.Time) error
 }

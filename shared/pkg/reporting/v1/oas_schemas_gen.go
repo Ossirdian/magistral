@@ -15,11 +15,13 @@ func (s *DefaultErrorStatusCode) Error() string {
 
 // Ref: #/components/schemas/CarUtilizationItem
 type CarUtilizationItem struct {
-	CarID        uuid.UUID `json:"car_id"`
-	PlateNumber  string    `json:"plate_number"`
-	DisplayName  string    `json:"display_name"`
-	LessonsTotal int64     `json:"lessons_total"`
-	TotalMinutes int64     `json:"total_minutes"`
+	CarID            uuid.UUID `json:"car_id"`
+	PlateNumber      string    `json:"plate_number"`
+	DisplayName      string    `json:"display_name"`
+	LessonsTotal     int64     `json:"lessons_total"`
+	TotalMinutes     int64     `json:"total_minutes"`
+	AvailableMinutes int64     `json:"available_minutes"`
+	IdleMinutes      int64     `json:"idle_minutes"`
 }
 
 // GetCarID returns the value of CarID.
@@ -47,6 +49,16 @@ func (s *CarUtilizationItem) GetTotalMinutes() int64 {
 	return s.TotalMinutes
 }
 
+// GetAvailableMinutes returns the value of AvailableMinutes.
+func (s *CarUtilizationItem) GetAvailableMinutes() int64 {
+	return s.AvailableMinutes
+}
+
+// GetIdleMinutes returns the value of IdleMinutes.
+func (s *CarUtilizationItem) GetIdleMinutes() int64 {
+	return s.IdleMinutes
+}
+
 // SetCarID sets the value of CarID.
 func (s *CarUtilizationItem) SetCarID(val uuid.UUID) {
 	s.CarID = val
@@ -70,6 +82,16 @@ func (s *CarUtilizationItem) SetLessonsTotal(val int64) {
 // SetTotalMinutes sets the value of TotalMinutes.
 func (s *CarUtilizationItem) SetTotalMinutes(val int64) {
 	s.TotalMinutes = val
+}
+
+// SetAvailableMinutes sets the value of AvailableMinutes.
+func (s *CarUtilizationItem) SetAvailableMinutes(val int64) {
+	s.AvailableMinutes = val
+}
+
+// SetIdleMinutes sets the value of IdleMinutes.
+func (s *CarUtilizationItem) SetIdleMinutes(val int64) {
+	s.IdleMinutes = val
 }
 
 // Ref: #/components/schemas/CarsUtilizationResponse
@@ -358,10 +380,12 @@ func (*GetStudentsReportUnauthorized) getStudentsReportRes() {}
 
 // Ref: #/components/schemas/InstructorWorkloadItem
 type InstructorWorkloadItem struct {
-	InstructorID uuid.UUID `json:"instructor_id"`
-	FullName     string    `json:"full_name"`
-	LessonsTotal int64     `json:"lessons_total"`
-	TotalMinutes int64     `json:"total_minutes"`
+	InstructorID     uuid.UUID `json:"instructor_id"`
+	FullName         string    `json:"full_name"`
+	LessonsTotal     int64     `json:"lessons_total"`
+	TotalMinutes     int64     `json:"total_minutes"`
+	AvailableMinutes int64     `json:"available_minutes"`
+	IdleMinutes      int64     `json:"idle_minutes"`
 }
 
 // GetInstructorID returns the value of InstructorID.
@@ -384,6 +408,16 @@ func (s *InstructorWorkloadItem) GetTotalMinutes() int64 {
 	return s.TotalMinutes
 }
 
+// GetAvailableMinutes returns the value of AvailableMinutes.
+func (s *InstructorWorkloadItem) GetAvailableMinutes() int64 {
+	return s.AvailableMinutes
+}
+
+// GetIdleMinutes returns the value of IdleMinutes.
+func (s *InstructorWorkloadItem) GetIdleMinutes() int64 {
+	return s.IdleMinutes
+}
+
 // SetInstructorID sets the value of InstructorID.
 func (s *InstructorWorkloadItem) SetInstructorID(val uuid.UUID) {
 	s.InstructorID = val
@@ -402,6 +436,16 @@ func (s *InstructorWorkloadItem) SetLessonsTotal(val int64) {
 // SetTotalMinutes sets the value of TotalMinutes.
 func (s *InstructorWorkloadItem) SetTotalMinutes(val int64) {
 	s.TotalMinutes = val
+}
+
+// SetAvailableMinutes sets the value of AvailableMinutes.
+func (s *InstructorWorkloadItem) SetAvailableMinutes(val int64) {
+	s.AvailableMinutes = val
+}
+
+// SetIdleMinutes sets the value of IdleMinutes.
+func (s *InstructorWorkloadItem) SetIdleMinutes(val int64) {
+	s.IdleMinutes = val
 }
 
 // Ref: #/components/schemas/InstructorWorkloadResponse

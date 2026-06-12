@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	auditpkg "github.com/ossirdian/magistral/platform/pkg/audit"
 	"github.com/ossirdian/magistral/platform/pkg/closer"
 	"github.com/ossirdian/magistral/platform/pkg/httpx"
 	"github.com/ossirdian/magistral/platform/pkg/logger"
@@ -90,7 +91,7 @@ func New(ctx context.Context, cfg *env.Config) (*App, error) {
 
 	server := &http.Server{
 		Addr:              cfg.HTTP().Addr(),
-		Handler:           ptracing.HTTPMiddleware("reporting-http", pmetrics.HTTPMiddleware(httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins()))),
+		Handler:           ptracing.HTTPMiddleware("reporting-http", pmetrics.HTTPMiddleware(auditpkg.Middleware("reporting", httpx.WithCORS(httpauth.Middleware(mux), cfg.HTTP().AllowedOrigins())))),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

@@ -41,6 +41,7 @@ func ConvertLesson(item model.Lesson) (lessonsv1.Lesson, error) {
 		EndAt:        item.EndAt,
 		Status:       lessonsv1.LessonStatus(item.Status),
 		Comment:      ptrStringToOptNilString(item.Comment),
+		IsGenerated:  item.IsGenerated,
 		CreatedAt:    item.CreatedAt,
 		UpdatedAt:    item.UpdatedAt,
 	}
@@ -104,6 +105,8 @@ func ConvertLessonFilter(params lessonsv1.ListLessonsParams) model.LessonFilter 
 		Status:       optLessonStatusToPtr(params.Status),
 		DateFrom:     optDateTimeToPtr(params.DateFrom),
 		DateTo:       optDateTimeToPtr(params.DateTo),
+		SortBy:       model.LessonSortBy(params.SortBy.Or(lessonsv1.LessonSortByStartAt)),
+		SortOrder:    model.SortOrder(params.SortOrder.Or(lessonsv1.SortOrderAsc)),
 		Limit:        params.Limit.Or(0),
 		Offset:       params.Offset.Or(0),
 	}

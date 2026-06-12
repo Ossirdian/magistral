@@ -18,20 +18,21 @@ var (
 type api struct {
 	lessonService    service.LessonService
 	planningProducer *planning.Producer
+	planningStatuses *planning.StatusStore
 }
 
-func New(lessonService service.LessonService, planningProducer *planning.Producer) (*api, error) {
+func New(lessonService service.LessonService, planningProducer *planning.Producer, planningStatuses *planning.StatusStore) (*api, error) {
 	if lessonService == nil {
 		return nil, errNilLessonService
 	}
 	if planningProducer == nil {
 		return nil, errNilPlanningProducer
 	}
-	return &api{lessonService: lessonService, planningProducer: planningProducer}, nil
+	return &api{lessonService: lessonService, planningProducer: planningProducer, planningStatuses: planningStatuses}, nil
 }
 
-func NewServer(lessonService service.LessonService, planningProducer *planning.Producer, opts ...lessonsv1.ServerOption) (*lessonsv1.Server, error) {
-	handler, err := New(lessonService, planningProducer)
+func NewServer(lessonService service.LessonService, planningProducer *planning.Producer, planningStatuses *planning.StatusStore, opts ...lessonsv1.ServerOption) (*lessonsv1.Server, error) {
+	handler, err := New(lessonService, planningProducer, planningStatuses)
 	if err != nil {
 		return nil, err
 	}

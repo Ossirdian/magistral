@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM golang:1.26.2-alpine AS builder
 
 WORKDIR /src
@@ -10,7 +11,7 @@ COPY shared ./shared
 COPY document ./document
 
 WORKDIR /src/document
-RUN go build -mod=mod -o /out/document-http-server ./cmd/http-server
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build go build -p=2 -mod=mod -o /out/document-http-server ./cmd/http-server
 
 FROM alpine:3.22
 

@@ -26,6 +26,7 @@ Lesson:
     - start_at
     - end_at
     - status
+    - is_generated
     - created_at
     - updated_at
   properties:
@@ -59,6 +60,8 @@ Lesson:
     comment:
       type: string
       nullable: true
+    is_generated:
+      type: boolean
     created_at:
       type: string
       format: date-time
